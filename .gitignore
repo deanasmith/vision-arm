@@ -15,3 +15,46 @@ __pycache__/
 *.heic
 *.heif
 *.raw
+
+
+# *** KiCad ***
+# Temporary files
+pcb/**/*.000
+pcb/**/*.bak
+pcb/**/*.bck
+pcb/**/*.kicad_pcb-bak
+pcb/**/*.kicad_sch-bak
+pcb/**/*-backups
+pcb/**/*-cache*
+pcb/**/*-bak
+pcb/**/*-bak*
+pcb/**/*~
+pcb/**/~*
+pcb/**/_autosave-*
+pcb/**/\#auto_saved_files\#
+pcb/**/*.tmp
+pcb/**/*-save.pro
+pcb/**/*-save.kicad_pcb
+pcb/**/fp-info-cache
+pcb/**/~*.lck
+pcb/**/\#auto_saved_files#
+
+# Netlist files (exported from Eeschema)
+pcb/**/*.net
+
+# Autorouter files (exported from Pcbnew)
+pcb/**/*.dsn
+pcb/**/*.ses
+
+# Exported BOM files
+pcb/**/*.xml
+pcb/**/*.csv
+
+# Archived Backups (KiCad 6.0)
+pcb/**/*-backups/*.zip
+
+# Local git-based history (KiCad 9.0+)
+pcb/**/.history
+
+# Local project settings
+pcb/**/*.kicad_prl
