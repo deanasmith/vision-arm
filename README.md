@@ -10,6 +10,6 @@ The project has several components that need to be running:
 3. Run `uv run python main.py <args>`
 
 `<args>` should be any of the following:
-- `calibrate`: Calibrate the cameras with the charuko board
+- `calibrate`: Calibrate the cameras with the charuco board
 - `track`: Start tracking with multiple cameras
 - `mono`: Start with a single camera (mostly for debugging)
