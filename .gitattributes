@@ -34,16 +34,17 @@ uv.lock         text
 
 # ***** KiCad *****
 # Project
-*.kicad_pro     text
-*.kicad_sch     text
-*.kicad_pcb     text
+*.kicad_pro     binary
+*.kicad_sch     binary
+*.kicad_pcb     binary
 
 # Library
-*.kicad_prl     text
-*.kicad_sym     text
-*.kicad_mod     text
-pcb/**/*.lib    text
-pcb/**/*.dcm    text
+*.kicad_prl     binary
+*.kicad_sym     binary
+*.kicad_mod     binary
+pcb/**/*.lib    binary
+pcb/**/*.dcm    binary
+pcb/**/*.mod    binary
 
 
 # ***** Other *****
