@@ -2,4 +2,5 @@
 	(version 7)
 	(lib (name "WP-THRBU_THROUGH-HOLE") (type "KiCad") (uri "${KIPRJMOD}/lib/74650074R/WP-THRBU_THROUGH-HOLE.kicad_sym") (options "") (descr ""))
 	(lib (name "lib") (type "KiCad") (uri "${KIPRJMOD}/lib/lib.kicad_sym") (options "") (descr ""))
+	(lib (name "ACS711ELCTR_12AB_T") (type "KiCad") (uri "${KIPRJMOD}/lib/ACS711ELCTR_12AB_T/ACS711ELCTR_12AB_T.kicad_sym") (options "") (descr ""))
 )
