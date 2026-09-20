@@ -1,0 +1,5 @@
+(sym_lib_table
+	(version 7)
+	(lib (name "WP-THRBU_THROUGH-HOLE") (type "KiCad") (uri "${KIPRJMOD}/lib/74650074R/WP-THRBU_THROUGH-HOLE.kicad_sym") (options "") (descr ""))
+	(lib (name "lib") (type "KiCad") (uri "${KIPRJMOD}/lib/lib.kicad_sym") (options "") (descr ""))
+)
