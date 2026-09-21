@@ -1,7 +1,7 @@
 (sym_lib_table
 	(version 7)
-	(lib (name "WP-THRBU_THROUGH-HOLE") (type "KiCad") (uri "${KIPRJMOD}/lib/74650074R/WP-THRBU_THROUGH-HOLE.kicad_sym") (options "") (descr ""))
 	(lib (name "lib") (type "KiCad") (uri "${KIPRJMOD}/lib/lib.kicad_sym") (options "") (descr ""))
 	(lib (name "ACS711ELCTR_12AB_T") (type "KiCad") (uri "${KIPRJMOD}/lib/ACS711ELCTR_12AB_T/ACS711ELCTR_12AB_T.kicad_sym") (options "") (descr ""))
 	(lib (name "TXS0102DCUR") (type "KiCad") (uri "${KIPRJMOD}/lib/TXS0102DCUR/TXS0102DCUR.kicad_sym") (options "") (descr ""))
+	(lib (name "AMT0440007DB0000G") (type "KiCad") (uri "${KIPRJMOD}/lib/AMT0440007DB0000G/2026-09-28_07-39-38.kicad_sym") (options "") (descr ""))
 )
