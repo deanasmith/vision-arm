@@ -18916,7 +18916,7 @@
 		(in_pos_files yes)
 		(duplicate_pin_numbers_are_jumpers no)
 		(property "Reference" "U"
-			(at 0 9.906 0)
+			(at 0 12.954 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -18926,7 +18926,7 @@
 			)
 		)
 		(property "Value" "NCP718BSNADJT1G"
-			(at 0 7.874 0)
+			(at 0 10.922 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -18992,7 +18992,7 @@
 		)
 		(symbol "NCP718BSNADJT1G_0_1"
 			(rectangle
-				(start -5.08 5.715)
+				(start -5.08 8.89)
 				(end 5.08 -5.08)
 				(stroke
 					(width 0.254)
@@ -19005,7 +19005,7 @@
 		)
 		(symbol "NCP718BSNADJT1G_1_1"
 			(pin power_in line
-				(at -7.62 3.81 0)
+				(at -7.62 6.35 0)
 				(length 2.54)
 				(name "IN"
 					(effects
@@ -19041,7 +19041,7 @@
 				)
 			)
 			(pin input line
-				(at -7.62 0 0)
+				(at -7.62 -1.27 0)
 				(length 2.54)
 				(name "EN"
 					(effects
@@ -19059,7 +19059,7 @@
 				)
 			)
 			(pin input line
-				(at 7.62 0 180)
+				(at 7.62 -1.27 180)
 				(length 2.54)
 				(name "ADJ"
 					(effects
@@ -19077,7 +19077,7 @@
 				)
 			)
 			(pin power_out line
-				(at 7.62 3.81 180)
+				(at 7.62 6.35 180)
 				(length 2.54)
 				(name "OUT"
 					(effects
