@@ -159,7 +159,7 @@
 					(type none)
 				)
 			)
-			(pin bidirectional line
+			(pin passive line
 				(at -11.43 -2.54 0)
 				(length 5.08)
 				(name "IP+"
@@ -177,7 +177,7 @@
 					)
 				)
 			)
-			(pin bidirectional line
+			(pin passive line
 				(at -11.43 -5.08 0)
 				(length 5.08)
 				(name "IP-"
@@ -195,7 +195,7 @@
 					)
 				)
 			)
-			(pin bidirectional line
+			(pin passive line
 				(at -11.43 -7.62 0)
 				(length 5.08)
 				(name "IP-"
@@ -269,7 +269,7 @@
 			)
 		)
 		(symbol "ACS711ELCTR-12AB-T_1_1"
-			(pin bidirectional line
+			(pin passive line
 				(at -11.43 0 0)
 				(length 5.08)
 				(name "IP+"

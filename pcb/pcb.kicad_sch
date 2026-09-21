@@ -167,7 +167,7 @@
 						(type none)
 					)
 				)
-				(pin bidirectional line
+				(pin passive line
 					(at -11.43 -2.54 0)
 					(length 5.08)
 					(name "IP+"
@@ -185,7 +185,7 @@
 						)
 					)
 				)
-				(pin bidirectional line
+				(pin passive line
 					(at -11.43 -5.08 0)
 					(length 5.08)
 					(name "IP-"
@@ -203,7 +203,7 @@
 						)
 					)
 				)
-				(pin bidirectional line
+				(pin passive line
 					(at -11.43 -7.62 0)
 					(length 5.08)
 					(name "IP-"
@@ -277,7 +277,7 @@
 				)
 			)
 			(symbol "ACS711ELCTR-12AB-T_1_1"
-				(pin bidirectional line
+				(pin passive line
 					(at -11.43 0 0)
 					(length 5.08)
 					(name "IP+"
@@ -16961,24 +16961,27 @@
 			(on_board yes)
 			(in_pos_files yes)
 			(duplicate_pin_numbers_are_jumpers no)
-			(property "Reference" "J"
-				(at 1.27 12.7 0)
+			(property "Reference" "J10"
+				(at 1.2699 12.7 90)
 				(show_name no)
 				(do_not_autoplace no)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
+					(justify left)
 				)
 			)
 			(property "Value" "Conn_02x10_Counter_Clockwise"
-				(at 1.27 -15.494 0)
+				(at 2.5399 12.7 90)
 				(show_name no)
 				(do_not_autoplace no)
+				(hide yes)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
+					(justify left)
 				)
 			)
 			(property "Footprint" ""
@@ -17466,7 +17469,7 @@
 						)
 					)
 				)
-				(pin passive line
+				(pin power_out line
 					(at 7.62 -10.16 180)
 					(length 3.81)
 					(name "Pin_12"
