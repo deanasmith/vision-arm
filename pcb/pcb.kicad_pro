@@ -448,6 +448,10 @@
     [
       "b72270b5-b15b-4888-aa22-4f85a0e1bbe2",
       "pcb"
+    ],
+    [
+      "9a0f57a0-4619-4e63-b72d-591c4b4632b6",
+      "power-supply"
     ]
   ],
   "text_variables": {},
