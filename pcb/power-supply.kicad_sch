@@ -4,6 +4,14 @@
 	(generator_version "10.0")
 	(uuid "47611f08-ec55-453b-ba4f-ca84e865b98c")
 	(paper "A4")
+	(title_block
+		(title "7V and 5V Power Supplies")
+		(date "2026-09-28")
+		(rev "1")
+		(company "ECE 4710 - Vision Arm")
+		(comment 3 "Also produces +5V for level shifter high side.")
+		(comment 4 "Receives +7V from screw connectors and filters it for powering servos.")
+	)
 	(lib_symbols
 		(symbol "Device:C_Small"
 			(pin_numbers
@@ -1345,13 +1353,13 @@
 		(uuid "023a6787-dd70-4d02-9561-73352d270c9c")
 	)
 	(junction
-		(at 119.38 102.87)
+		(at 119.38 100.33)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "1de1138f-1ac6-4006-9aa4-fe341a80a13a")
 	)
 	(junction
-		(at 110.49 102.87)
+		(at 110.49 100.33)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "2486fda7-0946-4670-9294-ef23474298be")
@@ -1387,20 +1395,20 @@
 		(uuid "b96c34b6-fda6-42fe-bdef-f39425b1f622")
 	)
 	(junction
-		(at 110.49 85.09)
+		(at 110.49 82.55)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "ced7a69a-a58f-441d-96ce-23421ad9f6b3")
 	)
 	(junction
-		(at 119.38 85.09)
+		(at 119.38 82.55)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "f0dfd3ad-49f3-485e-90ac-adc7405df50a")
 	)
 	(wire
 		(pts
-			(xy 100.33 101.6) (xy 100.33 102.87)
+			(xy 100.33 99.06) (xy 100.33 100.33)
 		)
 		(stroke
 			(width 0)
@@ -1410,7 +1418,7 @@
 	)
 	(wire
 		(pts
-			(xy 110.49 102.87) (xy 119.38 102.87)
+			(xy 110.49 100.33) (xy 119.38 100.33)
 		)
 		(stroke
 			(width 0)
@@ -1530,7 +1538,7 @@
 	)
 	(wire
 		(pts
-			(xy 119.38 102.87) (xy 119.38 105.41)
+			(xy 119.38 100.33) (xy 119.38 102.87)
 		)
 		(stroke
 			(width 0)
@@ -1540,7 +1548,7 @@
 	)
 	(wire
 		(pts
-			(xy 100.33 85.09) (xy 110.49 85.09)
+			(xy 100.33 82.55) (xy 110.49 82.55)
 		)
 		(stroke
 			(width 0)
@@ -1560,7 +1568,7 @@
 	)
 	(wire
 		(pts
-			(xy 119.38 85.09) (xy 119.38 90.17)
+			(xy 119.38 82.55) (xy 119.38 87.63)
 		)
 		(stroke
 			(width 0)
@@ -1590,7 +1598,7 @@
 	)
 	(wire
 		(pts
-			(xy 119.38 95.25) (xy 119.38 102.87)
+			(xy 119.38 92.71) (xy 119.38 100.33)
 		)
 		(stroke
 			(width 0)
@@ -1600,7 +1608,7 @@
 	)
 	(wire
 		(pts
-			(xy 110.49 83.82) (xy 110.49 85.09)
+			(xy 110.49 81.28) (xy 110.49 82.55)
 		)
 		(stroke
 			(width 0)
@@ -1630,7 +1638,7 @@
 	)
 	(wire
 		(pts
-			(xy 110.49 102.87) (xy 100.33 102.87)
+			(xy 110.49 100.33) (xy 100.33 100.33)
 		)
 		(stroke
 			(width 0)
@@ -1640,7 +1648,7 @@
 	)
 	(wire
 		(pts
-			(xy 100.33 83.82) (xy 100.33 85.09)
+			(xy 100.33 81.28) (xy 100.33 82.55)
 		)
 		(stroke
 			(width 0)
@@ -1660,7 +1668,7 @@
 	)
 	(wire
 		(pts
-			(xy 110.49 101.6) (xy 110.49 102.87)
+			(xy 110.49 99.06) (xy 110.49 100.33)
 		)
 		(stroke
 			(width 0)
@@ -1670,7 +1678,7 @@
 	)
 	(wire
 		(pts
-			(xy 119.38 85.09) (xy 124.46 85.09)
+			(xy 119.38 82.55) (xy 124.46 82.55)
 		)
 		(stroke
 			(width 0)
@@ -1700,7 +1708,7 @@
 	)
 	(wire
 		(pts
-			(xy 110.49 85.09) (xy 119.38 85.09)
+			(xy 110.49 82.55) (xy 119.38 82.55)
 		)
 		(stroke
 			(width 0)
@@ -1782,7 +1790,7 @@
 	)
 	(global_label "+7V"
 		(shape output)
-		(at 124.46 85.09 0)
+		(at 124.46 82.55 0)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -1792,7 +1800,7 @@
 		)
 		(uuid "79859993-d90c-410b-8a13-ead8caefb697")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 131.3157 85.09 0)
+			(at 131.3157 82.55 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1999,7 +2007,7 @@
 	)
 	(symbol
 		(lib_id "WP-THRBU_THROUGH-HOLE:WP-THRBU_THROUGH-HOLE")
-		(at 100.33 96.52 0)
+		(at 100.33 93.98 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -2010,7 +2018,7 @@
 		(fields_autoplaced yes)
 		(uuid "25494958-73fb-4468-b478-81b50bd90eb9")
 		(property "Reference" "J4"
-			(at 104.14 95.8849 0)
+			(at 104.14 93.3449 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -2021,7 +2029,7 @@
 			)
 		)
 		(property "Value" "Screw Connector"
-			(at 104.14 97.1549 0)
+			(at 104.14 94.6149 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2033,7 +2041,7 @@
 			)
 		)
 		(property "Footprint" "WP-THRBU_THROUGH-HOLE:WP-THRBU_74650074"
-			(at 100.33 96.52 0)
+			(at 100.33 93.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2045,7 +2053,7 @@
 			)
 		)
 		(property "Datasheet" "kicad-embed://74650074R.pdf"
-			(at 100.33 96.52 0)
+			(at 100.33 93.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2056,7 +2064,7 @@
 			)
 		)
 		(property "Description" "6 Pin Screw Terminal, Power Tap M8 Through Hole"
-			(at 100.33 96.52 0)
+			(at 100.33 93.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2067,7 +2075,7 @@
 			)
 		)
 		(property "Height" "12.4"
-			(at 116.84 491.44 0)
+			(at 116.84 488.9 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2079,7 +2087,7 @@
 			)
 		)
 		(property "DigiKey Part Number" "732-74650074RCT-ND"
-			(at 100.33 96.52 0)
+			(at 100.33 93.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2090,7 +2098,7 @@
 			)
 		)
 		(property "DigiKey URL" "https://www.digikey.com/en/products/detail/w%C3%BCrth-elektronik/74650074R/6643979"
-			(at 100.33 96.52 0)
+			(at 100.33 93.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2101,7 +2109,7 @@
 			)
 		)
 		(property "Mouser Part Number" " 523-AMT0680001DB000G"
-			(at 116.84 591.44 0)
+			(at 116.84 588.9 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2113,7 +2121,7 @@
 			)
 		)
 		(property "Mouser URL" "https://www.mouser.com/en/ProductDetail/Amphenol-Anytek/AMT0680001DB0000G?qs=ST9lo4GX8V3NSeCzs7tq%252BA%3D%3D"
-			(at 100.33 96.52 0)
+			(at 100.33 93.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2124,7 +2132,7 @@
 			)
 		)
 		(property "Manufacturer_Name" "Amphenol"
-			(at 116.84 791.44 0)
+			(at 116.84 788.9 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2136,7 +2144,7 @@
 			)
 		)
 		(property "Manufacturer_Part_Number" "AMT0680001DB0000G"
-			(at 116.84 891.44 0)
+			(at 116.84 888.9 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2148,7 +2156,7 @@
 			)
 		)
 		(property "PART-NUMBER" "74650074R"
-			(at 100.33 96.52 0)
+			(at 100.33 93.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2160,7 +2168,7 @@
 			)
 		)
 		(property "PINS" "4"
-			(at 100.33 96.52 0)
+			(at 100.33 93.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2172,7 +2180,7 @@
 			)
 		)
 		(property "IR" "50A"
-			(at 100.33 96.52 0)
+			(at 100.33 93.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2184,7 +2192,7 @@
 			)
 		)
 		(property "DATASHEET-URL" "https://katalog.we-online.de/em/datasheet/74650074R.pdf"
-			(at 100.33 96.52 0)
+			(at 100.33 93.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2196,7 +2204,7 @@
 			)
 		)
 		(property "THREAD" "M4"
-			(at 100.33 96.52 0)
+			(at 100.33 93.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2221,7 +2229,7 @@
 	)
 	(symbol
 		(lib_id "WP-THRBU_THROUGH-HOLE:WP-THRBU_THROUGH-HOLE")
-		(at 110.49 96.52 0)
+		(at 110.49 93.98 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -2232,7 +2240,7 @@
 		(fields_autoplaced yes)
 		(uuid "37e44673-c215-4a50-bd96-c81f8d72178e")
 		(property "Reference" "J3"
-			(at 114.3 95.8849 0)
+			(at 114.3 93.3449 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -2243,7 +2251,7 @@
 			)
 		)
 		(property "Value" "Screw Connector"
-			(at 114.3 97.1549 0)
+			(at 114.3 94.6149 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2255,7 +2263,7 @@
 			)
 		)
 		(property "Footprint" "WP-THRBU_THROUGH-HOLE:WP-THRBU_74650074"
-			(at 110.49 96.52 0)
+			(at 110.49 93.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2267,7 +2275,7 @@
 			)
 		)
 		(property "Datasheet" "kicad-embed://74650074R.pdf"
-			(at 110.49 96.52 0)
+			(at 110.49 93.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2278,7 +2286,7 @@
 			)
 		)
 		(property "Description" "6 Pin Screw Terminal, Power Tap M8 Through Hole"
-			(at 110.49 96.52 0)
+			(at 110.49 93.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2289,7 +2297,7 @@
 			)
 		)
 		(property "Height" "12.4"
-			(at 127 491.44 0)
+			(at 127 488.9 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2301,7 +2309,7 @@
 			)
 		)
 		(property "DigiKey Part Number" "732-74650074RCT-ND"
-			(at 110.49 96.52 0)
+			(at 110.49 93.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2312,7 +2320,7 @@
 			)
 		)
 		(property "DigiKey URL" "https://www.digikey.com/en/products/detail/w%C3%BCrth-elektronik/74650074R/6643979"
-			(at 110.49 96.52 0)
+			(at 110.49 93.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2323,7 +2331,7 @@
 			)
 		)
 		(property "Mouser Part Number" " 523-AMT0680001DB000G"
-			(at 127 591.44 0)
+			(at 127 588.9 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2335,7 +2343,7 @@
 			)
 		)
 		(property "Mouser URL" "https://www.mouser.com/en/ProductDetail/Amphenol-Anytek/AMT0680001DB0000G?qs=ST9lo4GX8V3NSeCzs7tq%252BA%3D%3D"
-			(at 110.49 96.52 0)
+			(at 110.49 93.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2346,7 +2354,7 @@
 			)
 		)
 		(property "Manufacturer_Name" "Amphenol"
-			(at 127 791.44 0)
+			(at 127 788.9 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2358,7 +2366,7 @@
 			)
 		)
 		(property "Manufacturer_Part_Number" "AMT0680001DB0000G"
-			(at 127 891.44 0)
+			(at 127 888.9 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2370,7 +2378,7 @@
 			)
 		)
 		(property "PART-NUMBER" "74650074R"
-			(at 110.49 96.52 0)
+			(at 110.49 93.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2382,7 +2390,7 @@
 			)
 		)
 		(property "PINS" "4"
-			(at 110.49 96.52 0)
+			(at 110.49 93.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2394,7 +2402,7 @@
 			)
 		)
 		(property "IR" "50A"
-			(at 110.49 96.52 0)
+			(at 110.49 93.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2406,7 +2414,7 @@
 			)
 		)
 		(property "DATASHEET-URL" "https://katalog.we-online.de/em/datasheet/74650074R.pdf"
-			(at 110.49 96.52 0)
+			(at 110.49 93.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2418,7 +2426,7 @@
 			)
 		)
 		(property "THREAD" "M4"
-			(at 110.49 96.52 0)
+			(at 110.49 93.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2443,7 +2451,7 @@
 	)
 	(symbol
 		(lib_id "Device:C_Small_US")
-		(at 119.38 92.71 0)
+		(at 119.38 90.17 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -2454,7 +2462,7 @@
 		(fields_autoplaced yes)
 		(uuid "3e0b804c-e831-47e3-9de5-796ac94281ab")
 		(property "Reference" "C1"
-			(at 121.92 91.5669 0)
+			(at 121.92 89.0269 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -2465,7 +2473,7 @@
 			)
 		)
 		(property "Value" "10µF"
-			(at 121.92 94.1069 0)
+			(at 121.92 91.5669 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -2476,7 +2484,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 119.38 92.71 0)
+			(at 119.38 90.17 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2487,7 +2495,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 119.38 92.71 0)
+			(at 119.38 90.17 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2498,7 +2506,7 @@
 			)
 		)
 		(property "Description" "capacitor, small US symbol"
-			(at 119.38 92.71 0)
+			(at 119.38 90.17 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2525,7 +2533,7 @@
 	)
 	(symbol
 		(lib_id "power:GNDREF")
-		(at 119.38 105.41 0)
+		(at 119.38 102.87 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -2536,7 +2544,7 @@
 		(fields_autoplaced yes)
 		(uuid "8b874270-a47c-402b-b6b5-2af7471a3336")
 		(property "Reference" "#PWR01"
-			(at 119.38 111.76 0)
+			(at 119.38 109.22 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2547,7 +2555,7 @@
 			)
 		)
 		(property "Value" "GNDREF"
-			(at 119.38 110.49 0)
+			(at 119.38 107.95 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -2557,7 +2565,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 119.38 105.41 0)
+			(at 119.38 102.87 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2568,7 +2576,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 119.38 105.41 0)
+			(at 119.38 102.87 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2579,7 +2587,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GNDREF\" , reference supply ground"
-			(at 119.38 105.41 0)
+			(at 119.38 102.87 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2686,7 +2694,7 @@
 	(symbol
 		(lib_name "WP-THRBU_THROUGH-HOLE_1")
 		(lib_id "WP-THRBU_THROUGH-HOLE:WP-THRBU_THROUGH-HOLE")
-		(at 110.49 78.74 0)
+		(at 110.49 76.2 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -2697,7 +2705,7 @@
 		(fields_autoplaced yes)
 		(uuid "9830d4bd-7c37-4c96-8f20-69f762b5d142")
 		(property "Reference" "J1"
-			(at 114.3 78.1049 0)
+			(at 114.3 75.5649 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -2708,7 +2716,7 @@
 			)
 		)
 		(property "Value" "Screw Connector"
-			(at 114.3 79.3749 0)
+			(at 114.3 76.8349 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2720,7 +2728,7 @@
 			)
 		)
 		(property "Footprint" "WP-THRBU_THROUGH-HOLE:WP-THRBU_74650074"
-			(at 110.49 78.74 0)
+			(at 110.49 76.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2732,7 +2740,7 @@
 			)
 		)
 		(property "Datasheet" "kicad-embed://74650074R.pdf"
-			(at 110.49 78.74 0)
+			(at 110.49 76.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2743,7 +2751,7 @@
 			)
 		)
 		(property "Description" "6 Pin Screw Terminal, Power Tap M8 Through Hole"
-			(at 110.49 78.74 0)
+			(at 110.49 76.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2754,7 +2762,7 @@
 			)
 		)
 		(property "Height" "12.4"
-			(at 127 473.66 0)
+			(at 127 471.12 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2766,7 +2774,7 @@
 			)
 		)
 		(property "DigiKey Part Number" "732-74650074RCT-ND"
-			(at 110.49 78.74 0)
+			(at 110.49 76.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2777,7 +2785,7 @@
 			)
 		)
 		(property "DigiKey URL" "https://www.digikey.com/en/products/detail/w%C3%BCrth-elektronik/74650074R/6643979"
-			(at 110.49 78.74 0)
+			(at 110.49 76.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2788,7 +2796,7 @@
 			)
 		)
 		(property "Mouser Part Number" " 523-AMT0680001DB000G"
-			(at 127 573.66 0)
+			(at 127 571.12 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2800,7 +2808,7 @@
 			)
 		)
 		(property "Mouser URL" "https://www.mouser.com/en/ProductDetail/Amphenol-Anytek/AMT0680001DB0000G?qs=ST9lo4GX8V3NSeCzs7tq%252BA%3D%3D"
-			(at 110.49 78.74 0)
+			(at 110.49 76.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2811,7 +2819,7 @@
 			)
 		)
 		(property "Manufacturer_Name" "Amphenol"
-			(at 127 773.66 0)
+			(at 127 771.12 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2823,7 +2831,7 @@
 			)
 		)
 		(property "Manufacturer_Part_Number" "AMT0680001DB0000G"
-			(at 127 873.66 0)
+			(at 127 871.12 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2835,7 +2843,7 @@
 			)
 		)
 		(property "PART-NUMBER" "74650074R"
-			(at 110.49 78.74 0)
+			(at 110.49 76.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2847,7 +2855,7 @@
 			)
 		)
 		(property "PINS" "4"
-			(at 110.49 78.74 0)
+			(at 110.49 76.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2859,7 +2867,7 @@
 			)
 		)
 		(property "IR" "50A"
-			(at 110.49 78.74 0)
+			(at 110.49 76.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2871,7 +2879,7 @@
 			)
 		)
 		(property "DATASHEET-URL" "https://katalog.we-online.de/em/datasheet/74650074R.pdf"
-			(at 110.49 78.74 0)
+			(at 110.49 76.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2883,7 +2891,7 @@
 			)
 		)
 		(property "THREAD" "M4"
-			(at 110.49 78.74 0)
+			(at 110.49 76.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3068,7 +3076,7 @@
 	)
 	(symbol
 		(lib_id "WP-THRBU_THROUGH-HOLE:WP-THRBU_THROUGH-HOLE")
-		(at 100.33 78.74 0)
+		(at 100.33 76.2 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -3079,7 +3087,7 @@
 		(fields_autoplaced yes)
 		(uuid "bdfe381e-5dbf-4fc6-bb9d-5db82bd1c225")
 		(property "Reference" "J2"
-			(at 104.14 78.1049 0)
+			(at 104.14 75.5649 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -3090,7 +3098,7 @@
 			)
 		)
 		(property "Value" "Screw Connector"
-			(at 104.14 79.3749 0)
+			(at 104.14 76.8349 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3102,7 +3110,7 @@
 			)
 		)
 		(property "Footprint" "WP-THRBU_THROUGH-HOLE:WP-THRBU_74650074"
-			(at 100.33 78.74 0)
+			(at 100.33 76.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3114,7 +3122,7 @@
 			)
 		)
 		(property "Datasheet" "kicad-embed://74650074R.pdf"
-			(at 100.33 78.74 0)
+			(at 100.33 76.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3125,7 +3133,7 @@
 			)
 		)
 		(property "Description" "6 Pin Screw Terminal, Power Tap M8 Through Hole"
-			(at 100.33 78.74 0)
+			(at 100.33 76.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3136,7 +3144,7 @@
 			)
 		)
 		(property "Height" "12.4"
-			(at 116.84 473.66 0)
+			(at 116.84 471.12 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3148,7 +3156,7 @@
 			)
 		)
 		(property "DigiKey Part Number" "732-74650074RCT-ND"
-			(at 100.33 78.74 0)
+			(at 100.33 76.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3159,7 +3167,7 @@
 			)
 		)
 		(property "DigiKey URL" "https://www.digikey.com/en/products/detail/w%C3%BCrth-elektronik/74650074R/6643979"
-			(at 100.33 78.74 0)
+			(at 100.33 76.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3170,7 +3178,7 @@
 			)
 		)
 		(property "Mouser Part Number" " 523-AMT0680001DB000G"
-			(at 116.84 573.66 0)
+			(at 116.84 571.12 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3182,7 +3190,7 @@
 			)
 		)
 		(property "Mouser URL" "https://www.mouser.com/en/ProductDetail/Amphenol-Anytek/AMT0680001DB0000G?qs=ST9lo4GX8V3NSeCzs7tq%252BA%3D%3D"
-			(at 100.33 78.74 0)
+			(at 100.33 76.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3193,7 +3201,7 @@
 			)
 		)
 		(property "Manufacturer_Name" "Amphenol"
-			(at 116.84 773.66 0)
+			(at 116.84 771.12 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3205,7 +3213,7 @@
 			)
 		)
 		(property "Manufacturer_Part_Number" "AMT0680001DB0000G"
-			(at 116.84 873.66 0)
+			(at 116.84 871.12 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3217,7 +3225,7 @@
 			)
 		)
 		(property "PART-NUMBER" "74650074R"
-			(at 100.33 78.74 0)
+			(at 100.33 76.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3229,7 +3237,7 @@
 			)
 		)
 		(property "PINS" "4"
-			(at 100.33 78.74 0)
+			(at 100.33 76.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3241,7 +3249,7 @@
 			)
 		)
 		(property "IR" "50A"
-			(at 100.33 78.74 0)
+			(at 100.33 76.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3253,7 +3261,7 @@
 			)
 		)
 		(property "DATASHEET-URL" "https://katalog.we-online.de/em/datasheet/74650074R.pdf"
-			(at 100.33 78.74 0)
+			(at 100.33 76.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3265,7 +3273,7 @@
 			)
 		)
 		(property "THREAD" "M4"
-			(at 100.33 78.74 0)
+			(at 100.33 76.2 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
