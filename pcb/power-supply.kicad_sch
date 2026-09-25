@@ -39767,6 +39767,16 @@
 	)
 	(wire
 		(pts
+			(xy 104.14 100.33) (xy 104.14 102.87)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5232efa8-40e5-4558-ad05-3f64a0de4e05")
+	)
+	(wire
+		(pts
 			(xy 83.82 90.17) (xy 91.44 90.17)
 		)
 		(stroke
@@ -39774,16 +39784,6 @@
 			(type default)
 		)
 		(uuid "56d12aed-017c-4477-9498-ca53a78eabdf")
-	)
-	(wire
-		(pts
-			(xy 104.14 100.33) (xy 104.14 102.87)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "571aca06-7aad-4cb0-9140-44e922f711a2")
 	)
 	(wire
 		(pts
@@ -40646,7 +40646,7 @@
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
-		(in_bom no)
+		(in_bom yes)
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
