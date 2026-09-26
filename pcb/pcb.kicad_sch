@@ -61763,30 +61763,6 @@
 		)
 		(uuid "ffbb54c0-0f4b-4825-92b2-8846502d3245")
 	)
-	(global_label "+7V_SHOULDER"
-		(shape input)
-		(at 93.98 119.38 90)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "0000f77e-b41b-48b9-b972-34298cc73f4c")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 93.98 101.6386 90)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-	)
 	(global_label "+7V_HIP"
 		(shape input)
 		(at 83.82 119.38 90)
@@ -61832,6 +61808,102 @@
 					(size 1.27 1.27)
 				)
 				(justify right)
+			)
+		)
+	)
+	(global_label "+7V_SHOULDER"
+		(shape output)
+		(at 158.75 127 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "033b3d26-71c9-4d25-b4c1-9c85fa34f726")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 141.0086 127 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+	)
+	(global_label "SHUTOFF_SHOULDER_H"
+		(shape output)
+		(at 81.28 45.72 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "088022c2-382d-486a-9847-054e3d118fd5")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 105.7948 45.72 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+	)
+	(global_label "SHUTOFF_ELBOW_L"
+		(shape input)
+		(at 81.28 73.66 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "0c15d84a-7509-4f96-9fc8-3c8a7ca78b24")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 101.8033 73.66 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+	)
+	(global_label "+7V_HAND"
+		(shape input)
+		(at 93.98 119.38 90)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "0ddd6ee9-ad7e-4f79-987b-ea43df026b5c")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 93.98 106.5371 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
 			)
 		)
 	)
@@ -61931,30 +62003,6 @@
 			)
 		)
 	)
-	(global_label "SHUTOFF_HAND_H"
-		(shape input)
-		(at 45.72 156.21 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "187f2448-0bcd-41b7-98e5-8ae98f9c148b")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 26.1037 156.21 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-	)
 	(global_label "SHUTOFF_WRIST_L"
 		(shape output)
 		(at 269.24 50.8 90)
@@ -61979,7 +62027,7 @@
 			)
 		)
 	)
-	(global_label "CTRL_HAND"
+	(global_label "CTRL_SHOULDER"
 		(shape input)
 		(at 76.2 170.18 180)
 		(fields_autoplaced yes)
@@ -61989,9 +62037,9 @@
 			)
 			(justify right)
 		)
-		(uuid "1e5b9bfa-e774-496f-918c-575d304a1d87")
+		(uuid "1b61919d-c4a9-4702-a17d-5421cf8e0c36")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 62.6919 170.18 0)
+			(at 57.7934 170.18 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -62003,19 +62051,19 @@
 			)
 		)
 	)
-	(global_label "SHUTOFF_HAND_L"
+	(global_label "+7V_SHOULDER"
 		(shape input)
-		(at 34.29 73.66 180)
+		(at 124.46 119.38 90)
 		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify right)
+			(justify left)
 		)
-		(uuid "1f58c79d-cbe8-40c0-bfee-ed3a4ca42bab")
+		(uuid "1eb9d480-c177-49c3-878a-65240fbbe806")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 14.9761 73.66 0)
+			(at 124.46 101.6386 90)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -62023,31 +62071,7 @@
 				(font
 					(size 1.27 1.27)
 				)
-				(justify right)
-			)
-		)
-	)
-	(global_label "CTRL_SHOULDER"
-		(shape input)
-		(at 76.2 177.8 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "203440a6-75de-4ba5-aa9d-a14f2a827ed5")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 57.7934 177.8 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
+				(justify left)
 			)
 		)
 	)
@@ -62072,54 +62096,6 @@
 					(size 1.27 1.27)
 				)
 				(justify right)
-			)
-		)
-	)
-	(global_label "I_SENSE_SHOULDER"
-		(shape output)
-		(at 213.36 54.61 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "2b12bf3c-4a15-4d54-a114-d22442c87213")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 234.8508 54.61 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-	)
-	(global_label "SHUTOFF_ELBOW_H"
-		(shape output)
-		(at 81.28 45.72 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "2b23736b-1ec7-407f-bf1f-eb49c4e304ec")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 102.1057 45.72 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
 			)
 		)
 	)
@@ -62171,30 +62147,6 @@
 			)
 		)
 	)
-	(global_label "SHUTOFF_WRIST_H"
-		(shape output)
-		(at 34.29 86.36 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "3f0b1c65-3b14-428f-b46d-8e0334c610fc")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 14.19 86.36 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-	)
 	(global_label "+3V3"
 		(shape input)
 		(at 22.86 31.75 180)
@@ -62240,30 +62192,6 @@
 					(size 1.27 1.27)
 				)
 				(justify left)
-			)
-		)
-	)
-	(global_label "+7V_SHOULDER"
-		(shape output)
-		(at 158.75 54.61 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "42cade9c-a5c2-43e9-bbd3-fd6c81024a38")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 141.0086 54.61 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
 			)
 		)
 	)
@@ -62363,6 +62291,30 @@
 			)
 		)
 	)
+	(global_label "I_SENSE_HAND"
+		(shape output)
+		(at 213.36 54.61 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "51051f5b-9ba6-474d-b4d7-ea3c7a069854")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 229.9523 54.61 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+	)
 	(global_label "I_SENSE_ELBOW"
 		(shape input)
 		(at 254 73.66 270)
@@ -62384,54 +62336,6 @@
 					(size 1.27 1.27)
 				)
 				(justify right)
-			)
-		)
-	)
-	(global_label "SHUTOFF_WRIST_L"
-		(shape input)
-		(at 34.29 93.98 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "5597f57d-1d37-46a8-a45d-ed8c99c78776")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 14.4924 93.98 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-	)
-	(global_label "I_SENSE_HAND"
-		(shape output)
-		(at 213.36 127 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "5728d86c-5126-4fe6-9d31-88ba3dd3f3b1")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 229.9523 127 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
 			)
 		)
 	)
@@ -62627,7 +62531,7 @@
 			)
 		)
 	)
-	(global_label "CTRL_HAND"
+	(global_label "CTRL_SHOULDER"
 		(shape output)
 		(at 259.08 50.8 90)
 		(fields_autoplaced yes)
@@ -62637,9 +62541,9 @@
 			)
 			(justify left)
 		)
-		(uuid "7750ee8b-5d26-43c1-ab69-74e4a243001e")
+		(uuid "7d1c1ce9-2a0f-47d6-b5be-b42d58898fff")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 259.08 37.2919 90)
+			(at 259.08 32.3934 90)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -62648,54 +62552,6 @@
 					(size 1.27 1.27)
 				)
 				(justify left)
-			)
-		)
-	)
-	(global_label "SHUTOFF_SHOULDER_H"
-		(shape output)
-		(at 81.28 66.04 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "7f102608-15d2-49bd-bd8f-dae473e5b7a3")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 105.7948 66.04 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-	)
-	(global_label "SHUTOFF_SHOULDER_H"
-		(shape input)
-		(at 45.72 133.35 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "83b4d8d5-f1c1-4075-b22b-a4f022e1d29e")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 21.2052 133.35 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
 			)
 		)
 	)
@@ -62843,6 +62699,30 @@
 			)
 		)
 	)
+	(global_label "CTRL_HAND"
+		(shape output)
+		(at 251.46 50.8 90)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "98edacc8-d5c0-4321-a0fc-0c71331c12b7")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 251.46 37.2919 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+	)
 	(global_label "SHUTOFF_SHOULDER_L"
 		(shape output)
 		(at 264.16 50.8 90)
@@ -62888,6 +62768,30 @@
 					(size 1.27 1.27)
 				)
 				(justify left)
+			)
+		)
+	)
+	(global_label "CTRL_HAND"
+		(shape input)
+		(at 76.2 177.8 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "9c330519-1c8f-4335-ab0d-346584786bc5")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 62.6919 177.8 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
 			)
 		)
 	)
@@ -62963,30 +62867,6 @@
 			)
 		)
 	)
-	(global_label "+7V_HAND"
-		(shape input)
-		(at 124.46 119.38 90)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "a9134b4b-7087-4c9b-9066-5334b489390a")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 124.46 106.5371 90)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-	)
 	(global_label "+7V_HIP"
 		(shape output)
 		(at 158.75 30.48 180)
@@ -63000,6 +62880,54 @@
 		(uuid "ab2c524e-4712-46a1-9cda-356a53719663")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 147.7214 30.48 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+	)
+	(global_label "SHUTOFF_ELBOW_H"
+		(shape output)
+		(at 81.28 66.04 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "adee1b3f-86a3-4ff0-9911-8b54a32cfe10")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 102.1057 66.04 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+	)
+	(global_label "SHUTOFF_WRIST_H"
+		(shape output)
+		(at 34.29 66.04 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "af3f2870-1eca-4391-a019-be42091a85b2")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 14.19 66.04 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -63032,6 +62960,30 @@
 					(size 1.27 1.27)
 				)
 				(justify right)
+			)
+		)
+	)
+	(global_label "SHUTOFF_SHOULDER_L"
+		(shape input)
+		(at 81.28 53.34 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "b5d584f2-72d4-43d8-b52c-c41dd697cd49")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 105.4924 53.34 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
 			)
 		)
 	)
@@ -63179,9 +63131,9 @@
 			)
 		)
 	)
-	(global_label "+7V_HAND"
-		(shape output)
-		(at 158.75 127 180)
+	(global_label "SHUTOFF_HAND_H"
+		(shape input)
+		(at 45.72 133.35 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -63189,9 +63141,57 @@
 			)
 			(justify right)
 		)
-		(uuid "de7b66b7-3270-45a9-84e3-2eb2dcd2309c")
+		(uuid "d1a86016-92e8-41d1-9792-6a327dd941c8")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 145.9071 127 0)
+			(at 26.1037 133.35 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+	)
+	(global_label "+7V_HAND"
+		(shape output)
+		(at 158.75 54.61 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "d6c1929f-d05e-4427-8443-01f0fdc1ceef")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 145.9071 54.61 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+	)
+	(global_label "SHUTOFF_SHOULDER_H"
+		(shape input)
+		(at 45.72 156.21 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "e51ca708-94ea-4f16-a6fb-42f13a1ba9bc")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 21.2052 156.21 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -63227,30 +63227,6 @@
 			)
 		)
 	)
-	(global_label "SHUTOFF_SHOULDER_L"
-		(shape input)
-		(at 81.28 73.66 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "e9420f22-5092-46ae-8964-b0d0a76b2144")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 105.4924 73.66 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-	)
 	(global_label "+7V_WRIST"
 		(shape input)
 		(at 114.3 119.38 90)
@@ -63275,9 +63251,33 @@
 			)
 		)
 	)
-	(global_label "CTRL_SHOULDER"
+	(global_label "SHUTOFF_WRIST_L"
+		(shape input)
+		(at 34.29 73.66 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "eacf5da1-5584-404f-9e05-39f0027c2392")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 14.4924 73.66 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+	)
+	(global_label "I_SENSE_SHOULDER"
 		(shape output)
-		(at 251.46 50.8 90)
+		(at 213.36 127 0)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -63285,9 +63285,9 @@
 			)
 			(justify left)
 		)
-		(uuid "edc3baa3-e4a0-463d-8384-dae202f9aea7")
+		(uuid "f1583b87-ff98-4f9f-a8f9-55dcc74d800a")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 251.46 32.3934 90)
+			(at 234.8508 127 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -63420,6 +63420,30 @@
 		)
 	)
 	(global_label "SHUTOFF_HAND_L"
+		(shape input)
+		(at 34.29 93.98 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "f5d7581f-eb43-4aa4-903c-56412be8e346")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 14.9761 93.98 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+	)
+	(global_label "SHUTOFF_HAND_L"
 		(shape output)
 		(at 271.78 50.8 90)
 		(fields_autoplaced yes)
@@ -63493,7 +63517,7 @@
 	)
 	(global_label "SHUTOFF_HAND_H"
 		(shape output)
-		(at 34.29 66.04 180)
+		(at 34.29 86.36 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -63501,9 +63525,9 @@
 			)
 			(justify right)
 		)
-		(uuid "fdfc8e30-8a32-4725-96cc-89c81d7d1b31")
+		(uuid "fe6c18ff-c9b1-4305-9538-413d44f93717")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 14.6737 66.04 0)
+			(at 14.6737 86.36 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -63512,30 +63536,6 @@
 					(size 1.27 1.27)
 				)
 				(justify right)
-			)
-		)
-	)
-	(global_label "SHUTOFF_ELBOW_L"
-		(shape input)
-		(at 81.28 53.34 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "ff8ab1f0-3f43-463f-aa9d-87137a74b122")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 101.8033 53.34 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
 			)
 		)
 	)
