@@ -284,6 +284,10 @@
       [
         "lib_symbol_mismatch|990600|1028700|0d3ada6c-c643-4cdf-b9a5-d2940627bfe3|00000000-0000-0000-0000-000000000000|||",
         "Pin functions"
+      ],
+      [
+        "multiple_net_names|2120900|1498600|aa14b6eb-4518-471c-b61e-6bd54f029777|e01cca71-3aa8-4686-8bec-7d744630fe46|/b72270b5-b15b-4888-aa22-4f85a0e1bbe2|/b72270b5-b15b-4888-aa22-4f85a0e1bbe2|/b72270b5-b15b-4888-aa22-4f85a0e1bbe2",
+        "-PWR_CTRL label for wire from power supply"
       ]
     ],
     "meta": {
@@ -779,7 +783,7 @@
         "uuid": "b72270b5-b15b-4888-aa22-4f85a0e1bbe2"
       }
     ],
-    "used_designators": "H1,JP1-3,R1-16,Q1-5,U1-9,C1-17,#PWR1-23,J1-16",
+    "used_designators": "H1,JP1-3,R1-17,Q1-5,U1-9,C1-17,#PWR1-25,J1-17",
     "variants": []
   },
   "sheets": [
