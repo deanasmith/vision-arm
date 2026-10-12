@@ -58,3 +58,7 @@ pcb/**/.history
 
 # Local project settings
 pcb/**/*.kicad_prl
+
+# Fabrication files
+pcb/gerbers/**
+pcb/**/*.zip
