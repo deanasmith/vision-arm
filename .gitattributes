@@ -50,6 +50,7 @@ pcb/**/*.mod    binary
 # ***** Other *****
 # 3D Models
 *.stp      binary
+*.step     binary
 
 # Documents
 *.bibtex   text diff=bibtex
