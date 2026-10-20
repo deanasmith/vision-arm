@@ -16,6 +16,9 @@
   */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "stm32f0xx_hal_gpio.h"
+#include "stm32f0xx_hal_gpio_ex.h"
+#include "stm32f0xx_hal_rcc.h"
 
 /* Private includes ----------------------------------------------------------*/
 
@@ -30,6 +33,7 @@
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void GPIO_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 
@@ -49,12 +53,43 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  GPIO_Init();
 
   /* Infinite loop */
   while (1)
   {
 
   }
+}
+
+
+/**
+  * @brief Initialize GPIO
+  * @param None
+  * @retval None
+  */
+static void GPIO_Init(void)
+{
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+  GPIO_InitTypeDef usart_init_struct = {0};
+
+  // Initialize USART TX pin
+  usart_init_struct.Pin       = USART3_TX_Pin;
+  usart_init_struct.Mode      = GPIO_MODE_AF_PP;
+  usart_init_struct.Pull      = GPIO_NOPULL;
+  usart_init_struct.Speed     = GPIO_SPEED_FREQ_LOW;
+  usart_init_struct.Alternate = GPIO_AF4_USART3;
+
+  HAL_GPIO_Init(USART3_GPIO_Port, &usart_init_struct);
+
+  // Initialize USART RX pin
+  usart_init_struct.Pin       = USART3_RX_Pin;
+  usart_init_struct.Mode      = GPIO_MODE_AF_OD;
+  usart_init_struct.Pull      = GPIO_NOPULL;
+  usart_init_struct.Speed     = GPIO_SPEED_FREQ_LOW;
+  usart_init_struct.Alternate = GPIO_AF4_USART3;
+
+  HAL_GPIO_Init(USART3_GPIO_Port, &usart_init_struct);
 }
 
 
