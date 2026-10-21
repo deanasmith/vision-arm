@@ -16,6 +16,7 @@
   */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "stm32f0xx_hal.h"
 #include "stm32f0xx_hal_gpio.h"
 #include "stm32f0xx_hal_gpio_ex.h"
 #include "stm32f0xx_hal_rcc.h"
@@ -71,14 +72,27 @@ int main(void)
 static void GPIO_Init(void)
 {
   __HAL_RCC_GPIOB_CLK_ENABLE();
-  GPIO_InitTypeDef usart_init_struct = {0};
+  GPIO_InitTypeDef uart_init_struct = {0};
 
-  // Initialize USART TX pin
-  usart_init_struct.Pin       = USART3_TX_Pin;
-  usart_init_struct.Mode      = GPIO_MODE_AF_PP;
-  usart_init_struct.Pull      = GPIO_NOPULL;
-  usart_init_struct.Speed     = GPIO_SPEED_FREQ_LOW;
-  usart_init_struct.Alternate = GPIO_AF4_USART3;
+  // Initialize UART TX pin
+  uart_init_struct.Pin       = USART3_TX_Pin;
+  uart_init_struct.Mode      = GPIO_MODE_AF_PP;
+  uart_init_struct.Pull      = GPIO_NOPULL;
+  uart_init_struct.Speed     = GPIO_SPEED_FREQ_LOW;
+  uart_init_struct.Alternate = GPIO_AF4_USART3;
+
+  HAL_GPIO_Init(USART3_GPIO_Port, &uart_init_struct);
+
+  // Initialize UART RX pin
+  uart_init_struct.Pin       = USART3_RX_Pin;
+  uart_init_struct.Mode      = GPIO_MODE_AF_OD;
+  uart_init_struct.Pull      = GPIO_NOPULL;
+  uart_init_struct.Speed     = GPIO_SPEED_FREQ_LOW;
+  uart_init_struct.Alternate = GPIO_AF4_USART3;
+
+  HAL_GPIO_Init(USART3_GPIO_Port, &uart_init_struct);
+}
+
 
   HAL_GPIO_Init(USART3_GPIO_Port, &usart_init_struct);
 
