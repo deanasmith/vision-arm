@@ -20,6 +20,8 @@
 #include "stm32f0xx_hal_gpio.h"
 #include "stm32f0xx_hal_gpio_ex.h"
 #include "stm32f0xx_hal_rcc.h"
+#include "stm32f0xx_hal_rcc_ex.h"
+#include "stm32f0xx_hal_uart.h"
 
 /* Private includes ----------------------------------------------------------*/
 
@@ -30,11 +32,13 @@
 /* Private macro -------------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
+UART_HandleTypeDef uart3_handle = {0};
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void GPIO_Init(void);
+static void USART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 
@@ -55,11 +59,16 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   GPIO_Init();
+  USART_Init();
 
+  uint8_t tx_buffer[100] = "Hello World!\n";
+  uint8_t rx_buffer[100];
   /* Infinite loop */
   while (1)
   {
-
+    HAL_UART_Receive(&uart3_handle, rx_buffer, 100, 1000000U);
+    HAL_UART_Transmit(&uart3_handle, tx_buffer, 14U, 1000000U);
+    HAL_Delay(1000U);
   }
 }
 
@@ -94,16 +103,27 @@ static void GPIO_Init(void)
 }
 
 
-  HAL_GPIO_Init(USART3_GPIO_Port, &usart_init_struct);
+/**
+  * @brif Initialize USART peripheral in UART mode
+  * @param None
+  * @retval None
+  */
+static void USART_Init(void)
+{
+  __HAL_RCC_USART3_CLK_ENABLE();
 
-  // Initialize USART RX pin
-  usart_init_struct.Pin       = USART3_RX_Pin;
-  usart_init_struct.Mode      = GPIO_MODE_AF_OD;
-  usart_init_struct.Pull      = GPIO_NOPULL;
-  usart_init_struct.Speed     = GPIO_SPEED_FREQ_LOW;
-  usart_init_struct.Alternate = GPIO_AF4_USART3;
+  UART_InitTypeDef uart_init_struct = {0};
+  uart_init_struct.BaudRate = 115200U;
+  uart_init_struct.WordLength = UART_WORDLENGTH_8B;
+  uart_init_struct.StopBits = UART_STOPBITS_1;
+  uart_init_struct.Parity = UART_PARITY_NONE;
+  uart_init_struct.Mode = UART_MODE_TX_RX;
 
-  HAL_GPIO_Init(USART3_GPIO_Port, &usart_init_struct);
+  // Setup uart3_handle struct
+  uart3_handle.Instance = USART3;
+  uart3_handle.Init = uart_init_struct;
+
+  HAL_UART_Init(&uart3_handle);
 }
 
 
