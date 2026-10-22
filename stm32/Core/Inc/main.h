@@ -76,9 +76,10 @@ void Error_Handler(void);
 #define SWCLK_Pin GPIO_PIN_14
 #define SWCLK_GPIO_Port GPIOA
 
+// USART3
+#define USART3_GPIO_Port GPIOB
 #define USART3_TX_Pin GPIO_PIN_10
 #define USART3_RX_Pin GPIO_PIN_11
-#define USART3_GPIO_Port GPIOB
 
 
 

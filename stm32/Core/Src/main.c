@@ -38,6 +38,7 @@ UART_HandleTypeDef uart3_handle = {0};
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void GPIO_Init(void);
+static void USART3_GPIO_Init(void);
 static void USART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
@@ -81,6 +82,18 @@ int main(void)
 static void GPIO_Init(void)
 {
   __HAL_RCC_GPIOB_CLK_ENABLE();
+
+  USART3_GPIO_Init();
+}
+
+
+/**
+  * @brif Initialize USART GPIO pins
+  * @param None
+  * @retval None
+  */
+static void USART3_GPIO_Init(void)
+{
   GPIO_InitTypeDef uart_init_struct = {0};
 
   // Initialize UART TX pin
