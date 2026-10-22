@@ -39,6 +39,11 @@ extern "C" {
 void Error_Handler(void);
 
 /* Private defines -----------------------------------------------------------*/
+// Default timer values
+#define TIMER_PSC 14U
+#define TIMER_ARR 64000U
+
+//Pin definitions
 #define NCS_MEMS_SPI_Pin GPIO_PIN_0
 #define NCS_MEMS_SPI_GPIO_Port GPIOC
 #define MEMS_INT1_Pin GPIO_PIN_1
