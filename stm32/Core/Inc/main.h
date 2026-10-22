@@ -81,6 +81,45 @@ void Error_Handler(void);
 #define USART3_TX_Pin GPIO_PIN_10
 #define USART3_RX_Pin GPIO_PIN_11
 
+// TIM1
+#define TIM1_GPIO_Port GPIOA
+#define TIM1_CH1_Pin GPIO_PIN_8
+#define TIM1_CH2_Pin GPIO_PIN_9
+#define TIM1_CH3_Pin GPIO_PIN_10
+#define TIM1_CH4_Pin GPIO_PIN_11
+
+// TIM2
+#define TIM2_CH1_GPIO_Port GPIOA
+#define TIM2_CH1_Pin GPIO_PIN_15
+
+#define TIM2_GPIO_Port GPIOB
+#define TIM2_CH2_Pin GPIO_PIN_3
+#define TIM2_CH3_Pin GPIO_PIN_10
+#define TIM2_CH4_Pin GPIO_PIN_11
+
+// TIM3
+#define TIM3_GPIO_Port GPIOC
+#define TIM3_CH1_Pin GPIO_PIN_6
+#define TIM3_CH2_Pin GPIO_PIN_7
+#define TIM3_CH3_Pin GPIO_PIN_8
+#define TIM3_CH4_Pin GPIO_PIN_9
+
+// TIM14
+#define TIM14_GPIO_Port GPIOA
+#define TIM14_CH1_Pin GPIO_PIN_4
+
+// TIM15
+#define TIM15_GPIO_Port GPIOB
+#define TIM15_CH1_Pin GPIO_PIN_14
+#define TIM15_CH2_Pin GPIO_PIN_15
+
+// TIM16
+#define TIM16_GPIO_Port GPIOB
+#define TIM16_CH1_Pin GPIO_PIN_8
+
+// TIM17
+#define TIM17_GPIO_Port GPIOB
+#define TIM17_CH1_Pin GPIO_PIN_9
 
 
 #ifdef __cplusplus

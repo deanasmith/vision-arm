@@ -22,6 +22,7 @@
 #include "stm32f0xx_hal_rcc.h"
 #include "stm32f0xx_hal_rcc_ex.h"
 #include "stm32f0xx_hal_uart.h"
+#include "stm32f0xx_hal_tim.h"
 
 /* Private includes ----------------------------------------------------------*/
 
@@ -39,6 +40,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void GPIO_Init(void);
 static void USART3_GPIO_Init(void);
+static void TIM1_GPIO_Init(void);
 static void USART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
@@ -81,9 +83,12 @@ int main(void)
   */
 static void GPIO_Init(void)
 {
+  __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
 
   USART3_GPIO_Init();
+  TIM1_GPIO_Init();
 }
 
 
@@ -113,6 +118,30 @@ static void USART3_GPIO_Init(void)
   uart_init_struct.Alternate = GPIO_AF4_USART3;
 
   HAL_GPIO_Init(USART3_GPIO_Port, &uart_init_struct);
+}
+
+
+/**
+ * @brief Initailize TIM1 GPIO pins
+ * @param None
+ * @retval None
+ */
+static void TIM1_GPIO_Init(void)
+{
+  GPIO_InitTypeDef tim1_init_struct = {0};
+
+  tim1_init_struct.Pin =
+    TIM1_CH1_Pin |
+    TIM1_CH2_Pin |
+    TIM1_CH3_Pin |
+    TIM1_CH4_Pin;
+
+  tim1_init_struct.Mode      = GPIO_MODE_AF_PP;
+  tim1_init_struct.Pull      = GPIO_NOPULL;
+  tim1_init_struct.Speed     = GPIO_SPEED_FREQ_LOW;
+  tim1_init_struct.Alternate = GPIO_AF2_TIM1;
+
+  HAL_GPIO_Init(TIM1_GPIO_Port, &tim1_init_struct);
 }
 
 
