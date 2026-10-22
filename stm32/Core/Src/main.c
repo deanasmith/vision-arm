@@ -88,7 +88,7 @@ static void GPIO_Init(void)
 
 
 /**
-  * @brif Initialize USART GPIO pins
+  * @brief Initialize USART GPIO pins
   * @param None
   * @retval None
   */
@@ -117,7 +117,7 @@ static void USART3_GPIO_Init(void)
 
 
 /**
-  * @brif Initialize USART peripheral in UART mode
+  * @brief Initialize USART peripheral in UART mode
   * @param None
   * @retval None
   */
@@ -126,15 +126,15 @@ static void USART_Init(void)
   __HAL_RCC_USART3_CLK_ENABLE();
 
   UART_InitTypeDef uart_init_struct = {0};
-  uart_init_struct.BaudRate = 115200U;
+  uart_init_struct.BaudRate   = 115200U;
   uart_init_struct.WordLength = UART_WORDLENGTH_8B;
-  uart_init_struct.StopBits = UART_STOPBITS_1;
-  uart_init_struct.Parity = UART_PARITY_NONE;
-  uart_init_struct.Mode = UART_MODE_TX_RX;
+  uart_init_struct.StopBits   = UART_STOPBITS_1;
+  uart_init_struct.Parity     = UART_PARITY_NONE;
+  uart_init_struct.Mode       = UART_MODE_TX_RX;
 
   // Setup uart3_handle struct
   uart3_handle.Instance = USART3;
-  uart3_handle.Init = uart_init_struct;
+  uart3_handle.Init     = uart_init_struct;
 
   HAL_UART_Init(&uart3_handle);
 }
