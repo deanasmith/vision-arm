@@ -55,6 +55,9 @@ static void configure_timers(void);
 
 // Helper functions
 static TIM_Base_InitTypeDef get_timer_init_struct(void);
+static void set_duty_cycle(TIM_HandleTypeDef *htim,
+                           const uint32_t ccr,
+                           uint32_t channel);
 
 /* Private user code ---------------------------------------------------------*/
 
@@ -93,10 +96,37 @@ int main(void)
   // calculate duty cycle CCR values instead for faster processing
   uint8_t tx_buffer[100] = "Hello World!\n";
   uint8_t rx_buffer[100];
+
+  uint32_t tim1_ch1_crr = TIMER_DEFAULT_CRR;  // FIXME: For debugging
+
+
   /* Infinite loop */
   while (1)
   {
     HAL_UART_Receive(&uart3_handle, rx_buffer, 100, 1000000U);
+    if (tim1_ch1_crr == SERVO_MIN_CRR) {
+      set_duty_cycle(&tim1_handle, SERVO_MAX_CRR, TIM_CHANNEL_1);
+      set_duty_cycle(&tim1_handle, SERVO_MIN_CRR, TIM_CHANNEL_2);
+      set_duty_cycle(&tim1_handle, SERVO_MAX_CRR, TIM_CHANNEL_3);
+
+      set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_1);
+      set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_2);
+      set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_3);
+      set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_4);
+      tim1_ch1_crr = SERVO_MAX_CRR;
+    }
+    else {
+      set_duty_cycle(&tim1_handle, SERVO_MIN_CRR, TIM_CHANNEL_1);
+      set_duty_cycle(&tim1_handle, SERVO_MAX_CRR, TIM_CHANNEL_2);
+      set_duty_cycle(&tim1_handle, SERVO_MIN_CRR, TIM_CHANNEL_3);
+
+      set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_1);
+      set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_2);
+      set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_3);
+      set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_4);
+      tim1_ch1_crr = SERVO_MIN_CRR;
+    }
+
     HAL_UART_Transmit(&uart3_handle, tx_buffer, 14U, 1000000U);
     HAL_Delay(1000U);
   }
@@ -309,6 +339,29 @@ static void configure_timers(void)
   HAL_TIM_PWM_ConfigChannel(&tim3_handle, &timer_config, TIM_CHANNEL_2);
   HAL_TIM_PWM_ConfigChannel(&tim3_handle, &timer_config, TIM_CHANNEL_3);
   HAL_TIM_PWM_ConfigChannel(&tim3_handle, &timer_config, TIM_CHANNEL_4);
+}
+
+
+/**
+ * @brief Sets the duty cycle for an initialized PWM timer
+ * @param htim TIM PWM handle
+ * @param ccr The new CCR value for the timer
+ * @param channel The channel to set the duty cycle for. See @ref
+ *          HAL_TIM_PWM_ConfigChannel for valid values
+ *
+ * @retval None
+ */
+static void set_duty_cycle(TIM_HandleTypeDef *htim,
+                           const uint32_t ccr,
+                           uint32_t channel)
+{
+  TIM_OC_InitTypeDef timer_config = {0};
+
+  timer_config.OCMode = TIM_OCMODE_PWM1;
+  timer_config.Pulse  = ccr;
+  timer_config.OCPolarity = TIM_OCPOLARITY_HIGH;
+
+  HAL_TIM_PWM_ConfigChannel(htim, &timer_config, channel);
 }
 
 
