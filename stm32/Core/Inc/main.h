@@ -39,9 +39,16 @@ extern "C" {
 void Error_Handler(void);
 
 /* Private defines -----------------------------------------------------------*/
+#define SERVO_MAX_DUTY_PERCENT 0.125	// This gives the min servo angle
+#define SERVO_MIN_DUTY_PERCENT 0.025	// This gives the max servo angle
+
 // Default timer values
 #define TIMER_PSC 14U
 #define TIMER_ARR 64000U
+
+#define SERVO_MAX_CRR ((uint32_t)(SERVO_MAX_DUTY_PERCENT*TIMER_ARR))
+#define SERVO_MIN_CRR ((uint32_t)(SERVO_MIN_DUTY_PERCENT*TIMER_ARR))
+#define TIMER_DEFAULT_CRR ((uint32_t)(SERVO_MIN_DUTY_PERCENT*TIMER_ARR))
 
 //Pin definitions
 #define NCS_MEMS_SPI_Pin GPIO_PIN_0
