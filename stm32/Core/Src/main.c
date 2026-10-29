@@ -35,6 +35,7 @@
 /* Private variables ---------------------------------------------------------*/
 UART_HandleTypeDef uart3_handle = {0};
 TIM_HandleTypeDef tim1_handle = {0};
+TIM_HandleTypeDef tim3_handle = {0};
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -46,6 +47,7 @@ static void TIM1_GPIO_Init(void);
 static void TIM3_GPIO_Init(void);
 static void USART_Init(void);
 static void TIM1_Init(void);
+static void TIM3_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 
@@ -68,6 +70,7 @@ int main(void)
   GPIO_Init();
   USART_Init();
   TIM1_Init();
+  TIM3_Init();
 
   // TODO: Send the ARR to the computer vision code on startup to let it
   // calculate duty cycle CCR values instead for faster processing
@@ -233,6 +236,42 @@ static void TIM1_Init(void)
     TIM_CHANNEL_4;
 
   HAL_TIM_PWM_Init(&tim1_handle);
+}
+
+
+/**
+ * @brief Initialize TIM3 peripheral in PWM output mode
+ * @param None
+ * @retval None
+ */
+static void TIM3_Init(void)
+{
+  __HAL_RCC_TIM3_CLK_ENABLE();
+
+  // FIXME: refactor this into a helper function
+  // TODO: Set the prescaler and ARR values dynamically
+  // HAL_RCC_GetPCLK1Freq();
+
+  // Set the timer to 50 Hz with an 48MHz PCLK
+  // PCLK = 48 MHz
+  // f_target = 50 Hz
+  // PSC = 14   // This is the minimum for ARR to be within the 16-bit register
+  // ARR = PCLK/((PSC + 1)*f_target)  // ARR == 64000
+  TIM_Base_InitTypeDef tim3_init_struct = {0};
+  tim3_init_struct.Prescaler         = TIMER_PSC;
+  tim3_init_struct.CounterMode       = TIM_COUNTERMODE_UP;
+  tim3_init_struct.Period            = TIMER_ARR;
+  tim3_init_struct.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+
+  tim3_handle.Instance = TIM3;
+  tim3_handle.Init     = tim3_init_struct;
+  tim3_handle.Channel  =
+    TIM_CHANNEL_1 |
+    TIM_CHANNEL_2 |
+    TIM_CHANNEL_3 |
+    TIM_CHANNEL_4;
+
+  HAL_TIM_PWM_Init(&tim3_handle);
 }
 
 
