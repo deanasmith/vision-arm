@@ -38,10 +38,12 @@ TIM_HandleTypeDef tim1_handle = {0};
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+
 static void MX_GPIO_Init(void);
 static void GPIO_Init(void);
 static void USART3_GPIO_Init(void);
 static void TIM1_GPIO_Init(void);
+static void TIM3_GPIO_Init(void);
 static void USART_Init(void);
 static void TIM1_Init(void);
 
@@ -94,6 +96,7 @@ static void GPIO_Init(void)
 
   USART3_GPIO_Init();
   TIM1_GPIO_Init();
+  TIM3_GPIO_Init();
 }
 
 
@@ -147,6 +150,30 @@ static void TIM1_GPIO_Init(void)
   tim1_init_struct.Alternate = GPIO_AF2_TIM1;
 
   HAL_GPIO_Init(TIM1_GPIO_Port, &tim1_init_struct);
+}
+
+
+/**
+ * @brief Initailize TIM3 GPIO pins
+ * @param None
+ * @retval None
+ */
+static void TIM3_GPIO_Init(void)
+{
+  GPIO_InitTypeDef tim3_init_struct = {0};
+
+  tim3_init_struct.Pin =
+    TIM3_CH1_Pin |
+    TIM3_CH2_Pin |
+    TIM3_CH3_Pin |
+    TIM3_CH4_Pin;
+
+  tim3_init_struct.Mode      = GPIO_MODE_AF_PP;
+  tim3_init_struct.Pull      = GPIO_NOPULL;
+  tim3_init_struct.Speed     = GPIO_SPEED_FREQ_LOW;
+  tim3_init_struct.Alternate = GPIO_AF0_TIM3;
+
+  HAL_GPIO_Init(TIM3_GPIO_Port, &tim3_init_struct);
 }
 
 
