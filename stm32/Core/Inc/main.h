@@ -96,9 +96,9 @@ void Error_Handler(void);
 // TIM1
 #define TIM1_GPIO_Port GPIOA
 #define TIM1_CH1_Pin GPIO_PIN_8
-#define TIM1_CH2_Pin GPIO_PIN_9
-#define TIM1_CH3_Pin GPIO_PIN_10
-#define TIM1_CH4_Pin GPIO_PIN_11	// TIM1_CH4 is assigned to the USER USB port on our STM32, so it can't be used
+// #define TIM1_CH2_Pin GPIO_PIN_9	// TIM1_CH2 isn't needed
+// #define TIM1_CH3_Pin GPIO_PIN_10	// TIM1_CH3 isn't needed
+// #define TIM1_CH4_Pin GPIO_PIN_11	// TIM1_CH4 is assigned to the USER USB port on our STM32, so it can't be used
 
 // TIM2
 #define TIM2_CH1_GPIO_Port GPIOA

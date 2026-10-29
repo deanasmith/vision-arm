@@ -188,12 +188,7 @@ static void TIM1_GPIO_Init(void)
 {
   GPIO_InitTypeDef tim1_init_struct = {0};
 
-  tim1_init_struct.Pin =
-    TIM1_CH1_Pin |
-    TIM1_CH2_Pin |
-    TIM1_CH3_Pin |
-    TIM1_CH4_Pin;
-
+  tim1_init_struct.Pin       = TIM1_CH1_Pin;
   tim1_init_struct.Mode      = GPIO_MODE_AF_PP;
   tim1_init_struct.Pull      = GPIO_NOPULL;
   tim1_init_struct.Speed     = GPIO_SPEED_FREQ_LOW;
@@ -262,11 +257,7 @@ static void TIM1_Init(void)
 
   tim1_handle.Instance = TIM1;
   tim1_handle.Init     = get_timer_init_struct();
-  tim1_handle.Channel  =
-    TIM_CHANNEL_1 |
-    TIM_CHANNEL_2 |
-    TIM_CHANNEL_3 |
-    TIM_CHANNEL_4;
+  tim1_handle.Channel  = TIM_CHANNEL_1;
 
   HAL_TIM_PWM_Init(&tim1_handle);
 }
@@ -332,8 +323,6 @@ static void configure_timers(void)
   timer_config.OCPolarity = TIM_OCPOLARITY_HIGH;
 
   HAL_TIM_PWM_ConfigChannel(&tim1_handle, &timer_config, TIM_CHANNEL_1);
-  HAL_TIM_PWM_ConfigChannel(&tim1_handle, &timer_config, TIM_CHANNEL_2);
-  HAL_TIM_PWM_ConfigChannel(&tim1_handle, &timer_config, TIM_CHANNEL_3);
 
   HAL_TIM_PWM_ConfigChannel(&tim3_handle, &timer_config, TIM_CHANNEL_1);
   HAL_TIM_PWM_ConfigChannel(&tim3_handle, &timer_config, TIM_CHANNEL_2);
