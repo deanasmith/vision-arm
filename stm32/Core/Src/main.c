@@ -51,6 +51,7 @@ static void TIM3_GPIO_Init(void);
 static void USART_Init(void);
 static void TIM1_Init(void);
 static void TIM3_Init(void);
+static void configure_timers(void);
 
 // Helper functions
 static TIM_Base_InitTypeDef get_timer_init_struct(void);
@@ -77,6 +78,16 @@ int main(void)
   USART_Init();
   TIM1_Init();
   TIM3_Init();
+  configure_timers();
+
+  HAL_TIM_PWM_Start(&tim1_handle, TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&tim1_handle, TIM_CHANNEL_2);
+  HAL_TIM_PWM_Start(&tim1_handle, TIM_CHANNEL_3);
+
+  HAL_TIM_PWM_Start(&tim3_handle, TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&tim3_handle, TIM_CHANNEL_2);
+  HAL_TIM_PWM_Start(&tim3_handle, TIM_CHANNEL_3);
+  HAL_TIM_PWM_Start(&tim3_handle, TIM_CHANNEL_4);
 
   // TODO: Send the ARR to the computer vision code on startup to let it
   // calculate duty cycle CCR values instead for faster processing
@@ -276,7 +287,28 @@ static TIM_Base_InitTypeDef get_timer_init_struct(void)
   return timer_init_struct;
 }
 
-  HAL_TIM_PWM_Init(&tim3_handle);
+
+/**
+ * @brief Configure timer peripherals for default PWM settings
+ * @param None
+ * @retval None
+ */
+static void configure_timers(void)
+{
+  TIM_OC_InitTypeDef timer_config = {0};
+
+  timer_config.OCMode     = TIM_OCMODE_PWM1;
+  timer_config.Pulse      = TIMER_DEFAULT_CRR;
+  timer_config.OCPolarity = TIM_OCPOLARITY_HIGH;
+
+  HAL_TIM_PWM_ConfigChannel(&tim1_handle, &timer_config, TIM_CHANNEL_1);
+  HAL_TIM_PWM_ConfigChannel(&tim1_handle, &timer_config, TIM_CHANNEL_2);
+  HAL_TIM_PWM_ConfigChannel(&tim1_handle, &timer_config, TIM_CHANNEL_3);
+
+  HAL_TIM_PWM_ConfigChannel(&tim3_handle, &timer_config, TIM_CHANNEL_1);
+  HAL_TIM_PWM_ConfigChannel(&tim3_handle, &timer_config, TIM_CHANNEL_2);
+  HAL_TIM_PWM_ConfigChannel(&tim3_handle, &timer_config, TIM_CHANNEL_3);
+  HAL_TIM_PWM_ConfigChannel(&tim3_handle, &timer_config, TIM_CHANNEL_4);
 }
 
 
