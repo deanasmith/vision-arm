@@ -40,14 +40,20 @@ TIM_HandleTypeDef tim3_handle = {0};
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 
+// GPIO initialization
 static void MX_GPIO_Init(void);
 static void GPIO_Init(void);
 static void USART3_GPIO_Init(void);
 static void TIM1_GPIO_Init(void);
 static void TIM3_GPIO_Init(void);
+
+// Peripheral initialization
 static void USART_Init(void);
 static void TIM1_Init(void);
 static void TIM3_Init(void);
+
+// Helper functions
+static TIM_Base_InitTypeDef get_timer_init_struct(void);
 
 /* Private user code ---------------------------------------------------------*/
 
@@ -213,22 +219,8 @@ static void TIM1_Init(void)
 {
   __HAL_RCC_TIM1_CLK_ENABLE();
 
-  // TODO: Set the prescaler and ARR values dynamically
-  // HAL_RCC_GetPCLK1Freq();
-
-  // Set the timer to 50 Hz with an 48MHz PCLK
-  // PCLK = 48 MHz
-  // f_target = 50 Hz
-  // PSC = 14   // This is the minimum for ARR to be within the 16-bit register
-  // ARR = PCLK/((PSC + 1)*f_target)  // ARR == 64000
-  TIM_Base_InitTypeDef tim1_init_struct = {0};
-  tim1_init_struct.Prescaler         = TIMER_PSC;
-  tim1_init_struct.CounterMode       = TIM_COUNTERMODE_UP;
-  tim1_init_struct.Period            = TIMER_ARR;
-  tim1_init_struct.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
-
   tim1_handle.Instance = TIM1;
-  tim1_handle.Init     = tim1_init_struct;
+  tim1_handle.Init     = get_timer_init_struct();
   tim1_handle.Channel  =
     TIM_CHANNEL_1 |
     TIM_CHANNEL_2 |
@@ -248,7 +240,25 @@ static void TIM3_Init(void)
 {
   __HAL_RCC_TIM3_CLK_ENABLE();
 
-  // FIXME: refactor this into a helper function
+  tim3_handle.Instance = TIM3;
+  tim3_handle.Init     = get_timer_init_struct();
+  tim3_handle.Channel  =
+    TIM_CHANNEL_1 |
+    TIM_CHANNEL_2 |
+    TIM_CHANNEL_3 |
+    TIM_CHANNEL_4;
+
+  HAL_TIM_PWM_Init(&tim3_handle);
+}
+
+
+/**
+ * @brief Returns a timer init struct for baseline PWM setup
+ * @param None
+ * @retval A timer init struct for baseline PWM setup
+ */
+static TIM_Base_InitTypeDef get_timer_init_struct(void)
+{
   // TODO: Set the prescaler and ARR values dynamically
   // HAL_RCC_GetPCLK1Freq();
 
@@ -257,19 +267,14 @@ static void TIM3_Init(void)
   // f_target = 50 Hz
   // PSC = 14   // This is the minimum for ARR to be within the 16-bit register
   // ARR = PCLK/((PSC + 1)*f_target)  // ARR == 64000
-  TIM_Base_InitTypeDef tim3_init_struct = {0};
-  tim3_init_struct.Prescaler         = TIMER_PSC;
-  tim3_init_struct.CounterMode       = TIM_COUNTERMODE_UP;
-  tim3_init_struct.Period            = TIMER_ARR;
-  tim3_init_struct.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  TIM_Base_InitTypeDef timer_init_struct = {0};
+  timer_init_struct.Prescaler         = TIMER_PSC;
+  timer_init_struct.CounterMode       = TIM_COUNTERMODE_UP;
+  timer_init_struct.Period            = TIMER_ARR;
+  timer_init_struct.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
 
-  tim3_handle.Instance = TIM3;
-  tim3_handle.Init     = tim3_init_struct;
-  tim3_handle.Channel  =
-    TIM_CHANNEL_1 |
-    TIM_CHANNEL_2 |
-    TIM_CHANNEL_3 |
-    TIM_CHANNEL_4;
+  return timer_init_struct;
+}
 
   HAL_TIM_PWM_Init(&tim3_handle);
 }
