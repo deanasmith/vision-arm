@@ -84,8 +84,6 @@ int main(void)
   configure_timers();
 
   HAL_TIM_PWM_Start(&tim1_handle, TIM_CHANNEL_1);
-  HAL_TIM_PWM_Start(&tim1_handle, TIM_CHANNEL_2);
-  HAL_TIM_PWM_Start(&tim1_handle, TIM_CHANNEL_3);
 
   HAL_TIM_PWM_Start(&tim3_handle, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&tim3_handle, TIM_CHANNEL_2);
