@@ -63,6 +63,9 @@ static void set_duty_cycle(TIM_HandleTypeDef *htim,
                            const uint32_t ccr,
                            uint32_t channel);
 
+// Test functions
+static void test_servos(void);
+
 /* Private user code ---------------------------------------------------------*/
 
 /**
@@ -99,8 +102,6 @@ int main(void)
   uint8_t tx_buffer[100] = "Hello World!\n";
   uint8_t rx_buffer[100];
 
-  uint32_t tim1_ch1_crr = TIMER_DEFAULT_CRR;  // FIXME: For debugging
-
 
   /* Infinite loop */
   while (1)
@@ -114,60 +115,86 @@ int main(void)
 
     switch (joint_id) {
       case HIP:
+        err_message = "Joint ID is '0' (HIP)\n";
+        HAL_UART_Transmit(&uart3_handle, (uint8_t *)err_message, (size_t)strlen(err_message), 100000U);
         joint_handle = &tim1_handle;
         joint_channel = TIM_CHANNEL_1;
         break;
       case HAND:
+        err_message = "Joint ID is '1' (HAND)\n";
+        HAL_UART_Transmit(&uart3_handle, (uint8_t *)err_message, (size_t)strlen(err_message), 100000U);
         joint_handle = &tim3_handle;
         joint_channel = TIM_CHANNEL_1;
         break;
-      case WRIST:
-        joint_handle = &tim3_handle;
-        joint_channel = TIM_CHANNEL_2;
-        break;
       case ELBOW:
+        err_message = "Joint ID is '2' (ELBOW)\n";
+        HAL_UART_Transmit(&uart3_handle, (uint8_t *)err_message, (size_t)strlen(err_message), 100000U);
         joint_handle = &tim3_handle;
         joint_channel = TIM_CHANNEL_3;
         break;
+      case WRIST:
+        err_message = "Joint ID is '3' (WRIST)\n";
+        HAL_UART_Transmit(&uart3_handle, (uint8_t *)err_message, (size_t)strlen(err_message), 100000U);
+        joint_handle = &tim3_handle;
+        joint_channel = TIM_CHANNEL_2;
+        break;
       case SHOULDER:
+        err_message = "Joint ID is '4' (SHOULDER)\n";
+        HAL_UART_Transmit(&uart3_handle, (uint8_t *)err_message, (size_t)strlen(err_message), 100000U);
         joint_handle = &tim3_handle;
         joint_channel = TIM_CHANNEL_4;
         break;
       default:
-       err_message = "Invalid joint ID";
-        HAL_UART_Transmit(&uart3_handle, (uint8_t *)err_message, (size_t)strlen(err_message), 100000U); // FIXME: This might need to send an extra byte for '\0'
+        err_message = "Invalid joint ID\n";
+        HAL_UART_Transmit(&uart3_handle, (uint8_t *)err_message, (size_t)strlen(err_message), 100000U);
     }
 
     if (joint_handle != NULL && joint_channel != ~0) {
       uint32_t crr = parse_new_crr(rx_buffer);
       set_duty_cycle(joint_handle, crr, joint_channel);
+
+      snprintf((char *)tx_buffer, sizeof(tx_buffer), "Setting CRR to '%d'\n", crr);
+      HAL_UART_Transmit(&uart3_handle, (uint8_t *)tx_buffer, (size_t)strlen(err_message), 100000U);
     }
     else {
-      err_message = "Unable to parse joint ID or joint channel";
+      err_message = "Unable to parse joint ID or joint channel\n";
       HAL_UART_Transmit(&uart3_handle, (uint8_t *)err_message, (size_t)strlen(err_message), 100000U);
 
-      if (tim1_ch1_crr == SERVO_MIN_CRR) {
-        set_duty_cycle(&tim1_handle, SERVO_MAX_CRR, TIM_CHANNEL_1);
-
-        set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_1);
-        set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_2);
-        set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_3);
-        set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_4);
-        tim1_ch1_crr = SERVO_MAX_CRR;
-      }
-      else {
-        set_duty_cycle(&tim1_handle, SERVO_MIN_CRR, TIM_CHANNEL_1);
-
-        set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_1);
-        set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_2);
-        set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_3);
-        set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_4);
-        tim1_ch1_crr = SERVO_MIN_CRR;
-      }
+      test_servos();  // FIXME: For debugging servo movement
     }
 
-    HAL_UART_Transmit(&uart3_handle, tx_buffer, 14U, 1000000U);
+    HAL_UART_Transmit(&uart3_handle, tx_buffer, 13U, 1000000U);
     HAL_Delay(1000U);
+  }
+}
+
+
+/**
+ * @brief Test all servos by rotating between min and max angles
+ * @param None
+ * @retval None
+ */
+static void test_servos(void)
+{
+  static uint32_t tim1_ch1_crr = TIMER_DEFAULT_CRR;
+
+  if (tim1_ch1_crr == SERVO_MIN_CRR) {
+    set_duty_cycle(&tim1_handle, SERVO_MAX_CRR, TIM_CHANNEL_1);
+
+    set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_1);
+    set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_2);
+    set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_3);
+    set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_4);
+    tim1_ch1_crr = SERVO_MAX_CRR;
+  }
+  else {
+    set_duty_cycle(&tim1_handle, SERVO_MIN_CRR, TIM_CHANNEL_1);
+
+    set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_1);
+    set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_2);
+    set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_3);
+    set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_4);
+    tim1_ch1_crr = SERVO_MIN_CRR;
   }
 }
 
