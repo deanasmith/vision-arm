@@ -24,6 +24,9 @@
 #include "stm32f0xx_hal_uart.h"
 #include "stm32f0xx_hal_tim.h"
 
+#include <stdlib.h>
+#include <string.h>
+
 /* Private includes ----------------------------------------------------------*/
 
 /* Private typedef -----------------------------------------------------------*/
@@ -55,6 +58,7 @@ static void configure_timers(void);
 
 // Helper functions
 static TIM_Base_InitTypeDef get_timer_init_struct(void);
+static uint32_t parse_new_crr(uint8_t *rx_bytes);
 static void set_duty_cycle(TIM_HandleTypeDef *htim,
                            const uint32_t ccr,
                            uint32_t channel);
@@ -101,24 +105,65 @@ int main(void)
   /* Infinite loop */
   while (1)
   {
-    HAL_UART_Receive(&uart3_handle, rx_buffer, 100, 1000000U);
-    if (tim1_ch1_crr == SERVO_MIN_CRR) {
-      set_duty_cycle(&tim1_handle, SERVO_MAX_CRR, TIM_CHANNEL_1);
+    HAL_UART_Receive(&uart3_handle, rx_buffer, 3U, 1000000U);
 
-      set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_1);
-      set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_2);
-      set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_3);
-      set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_4);
-      tim1_ch1_crr = SERVO_MAX_CRR;
+    Joint joint_id = (Joint)rx_buffer[0];
+    TIM_HandleTypeDef *joint_handle = NULL;
+    uint32_t joint_channel = ~0U;
+    char *err_message = NULL;
+
+    switch (joint_id) {
+      case HIP:
+        joint_handle = &tim1_handle;
+        joint_channel = TIM_CHANNEL_1;
+        break;
+      case HAND:
+        joint_handle = &tim3_handle;
+        joint_channel = TIM_CHANNEL_1;
+        break;
+      case WRIST:
+        joint_handle = &tim3_handle;
+        joint_channel = TIM_CHANNEL_2;
+        break;
+      case ELBOW:
+        joint_handle = &tim3_handle;
+        joint_channel = TIM_CHANNEL_3;
+        break;
+      case SHOULDER:
+        joint_handle = &tim3_handle;
+        joint_channel = TIM_CHANNEL_4;
+        break;
+      default:
+       err_message = "Invalid joint ID";
+        HAL_UART_Transmit(&uart3_handle, (uint8_t *)err_message, (size_t)strlen(err_message), 100000U); // FIXME: This might need to send an extra byte for '\0'
+    }
+
+    if (joint_handle != NULL && joint_channel != ~0) {
+      uint32_t crr = parse_new_crr(rx_buffer);
+      set_duty_cycle(joint_handle, crr, joint_channel);
     }
     else {
-      set_duty_cycle(&tim1_handle, SERVO_MIN_CRR, TIM_CHANNEL_1);
+      err_message = "Unable to parse joint ID or joint channel";
+      HAL_UART_Transmit(&uart3_handle, (uint8_t *)err_message, (size_t)strlen(err_message), 100000U);
 
-      set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_1);
-      set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_2);
-      set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_3);
-      set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_4);
-      tim1_ch1_crr = SERVO_MIN_CRR;
+      if (tim1_ch1_crr == SERVO_MIN_CRR) {
+        set_duty_cycle(&tim1_handle, SERVO_MAX_CRR, TIM_CHANNEL_1);
+
+        set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_1);
+        set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_2);
+        set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_3);
+        set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_4);
+        tim1_ch1_crr = SERVO_MAX_CRR;
+      }
+      else {
+        set_duty_cycle(&tim1_handle, SERVO_MIN_CRR, TIM_CHANNEL_1);
+
+        set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_1);
+        set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_2);
+        set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_3);
+        set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_4);
+        tim1_ch1_crr = SERVO_MIN_CRR;
+      }
     }
 
     HAL_UART_Transmit(&uart3_handle, tx_buffer, 14U, 1000000U);
@@ -322,6 +367,22 @@ static void configure_timers(void)
   HAL_TIM_PWM_ConfigChannel(&tim3_handle, &timer_config, TIM_CHANNEL_2);
   HAL_TIM_PWM_ConfigChannel(&tim3_handle, &timer_config, TIM_CHANNEL_3);
   HAL_TIM_PWM_ConfigChannel(&tim3_handle, &timer_config, TIM_CHANNEL_4);
+}
+
+
+/**
+ * @brief Parses the first second and third bytes of a buffer as a 16-bit integer
+ * @note The two bytes are assumed to be in big endian order (`buffer[1]` holds
+ *        the MSBs and `buffer[2]` holds the LSBs)
+ * @param buffer The buffer to parse the seconds and third bytes of
+ * @retval The bitwise concatenation of the second and third bytes of `buffer`
+ */
+static uint32_t parse_new_crr(uint8_t *buffer)
+{
+  if (sizeof(buffer) < 3)
+    return 0;
+
+  return (buffer[1] << 8) | buffer[2];
 }
 
 
