@@ -104,8 +104,6 @@ int main(void)
     HAL_UART_Receive(&uart3_handle, rx_buffer, 100, 1000000U);
     if (tim1_ch1_crr == SERVO_MIN_CRR) {
       set_duty_cycle(&tim1_handle, SERVO_MAX_CRR, TIM_CHANNEL_1);
-      set_duty_cycle(&tim1_handle, SERVO_MIN_CRR, TIM_CHANNEL_2);
-      set_duty_cycle(&tim1_handle, SERVO_MAX_CRR, TIM_CHANNEL_3);
 
       set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_1);
       set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_2);
@@ -115,8 +113,6 @@ int main(void)
     }
     else {
       set_duty_cycle(&tim1_handle, SERVO_MIN_CRR, TIM_CHANNEL_1);
-      set_duty_cycle(&tim1_handle, SERVO_MAX_CRR, TIM_CHANNEL_2);
-      set_duty_cycle(&tim1_handle, SERVO_MIN_CRR, TIM_CHANNEL_3);
 
       set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_1);
       set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_2);
