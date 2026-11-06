@@ -58,7 +58,7 @@ static void configure_timers(void);
 
 // Helper functions
 static TIM_Base_InitTypeDef get_timer_init_struct(void);
-static uint32_t parse_new_crr(uint8_t *rx_bytes);
+static uint32_t parse_new_ccr(uint8_t *rx_bytes);
 static void set_duty_cycle(TIM_HandleTypeDef *htim,
                            const uint32_t ccr,
                            uint32_t channel);
@@ -150,10 +150,10 @@ int main(void)
     }
 
     if (joint_handle != NULL && joint_channel != ~0) {
-      uint32_t crr = parse_new_crr(rx_buffer);
-      set_duty_cycle(joint_handle, crr, joint_channel);
+      uint32_t ccr = parse_new_ccr(rx_buffer);
+      set_duty_cycle(joint_handle, ccr, joint_channel);
 
-      snprintf((char *)tx_buffer, sizeof(tx_buffer), "Setting CRR to '%d'\n", crr);
+      snprintf((char *)tx_buffer, sizeof(tx_buffer), "Setting CCR to '%d'\n", ccr);
       HAL_UART_Transmit(&uart3_handle, (uint8_t *)tx_buffer, (size_t)strlen(err_message), 100000U);
     }
     else {
@@ -176,25 +176,27 @@ int main(void)
  */
 static void test_servos(void)
 {
-  static uint32_t tim1_ch1_crr = TIMER_DEFAULT_CRR;
+  static uint32_t tim1_ch1_ccr = TIMER_DEFAULT_CCR;
 
-  if (tim1_ch1_crr == SERVO_MIN_CRR) {
-    set_duty_cycle(&tim1_handle, SERVO_MAX_CRR, TIM_CHANNEL_1);
+  if (tim1_ch1_ccr == SERVO_MAX_CCR) {
+    set_duty_cycle(&tim1_handle, SERVO_MAX_CCR, TIM_CHANNEL_1);
 
-    set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_1);
-    set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_2);
-    set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_3);
-    set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_4);
-    tim1_ch1_crr = SERVO_MAX_CRR;
+    set_duty_cycle(&tim3_handle, SERVO_MAX_CCR, TIM_CHANNEL_1);
+    set_duty_cycle(&tim3_handle, SERVO_MAX_CCR, TIM_CHANNEL_2);
+    set_duty_cycle(&tim3_handle, SERVO_MAX_CCR, TIM_CHANNEL_3);
+    set_duty_cycle(&tim3_handle, SERVO_MAX_CCR, TIM_CHANNEL_4);
+
+    tim1_ch1_ccr = SERVO_MIN_CCR;
   }
   else {
-    set_duty_cycle(&tim1_handle, SERVO_MIN_CRR, TIM_CHANNEL_1);
+    set_duty_cycle(&tim1_handle, SERVO_MIN_CCR, TIM_CHANNEL_1);
 
-    set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_1);
-    set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_2);
-    set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_3);
-    set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_4);
-    tim1_ch1_crr = SERVO_MIN_CRR;
+    set_duty_cycle(&tim3_handle, SERVO_MIN_CCR, TIM_CHANNEL_1);
+    set_duty_cycle(&tim3_handle, SERVO_MIN_CCR, TIM_CHANNEL_2);
+    set_duty_cycle(&tim3_handle, SERVO_MIN_CCR, TIM_CHANNEL_3);
+    set_duty_cycle(&tim3_handle, SERVO_MIN_CCR, TIM_CHANNEL_4);
+
+    tim1_ch1_ccr = SERVO_MAX_CCR;
   }
 }
 
@@ -385,7 +387,7 @@ static void configure_timers(void)
   TIM_OC_InitTypeDef timer_config = {0};
 
   timer_config.OCMode     = TIM_OCMODE_PWM1;
-  timer_config.Pulse      = TIMER_DEFAULT_CRR;
+  timer_config.Pulse      = TIMER_DEFAULT_CCR;
   timer_config.OCPolarity = TIM_OCPOLARITY_HIGH;
 
   HAL_TIM_PWM_ConfigChannel(&tim1_handle, &timer_config, TIM_CHANNEL_1);
@@ -398,13 +400,13 @@ static void configure_timers(void)
 
 
 /**
- * @brief Parses the first second and third bytes of a buffer as a 16-bit integer
+ * @brief Parses the second and third bytes of a buffer as a 16-bit integer
  * @note The two bytes are assumed to be in big endian order (`buffer[1]` holds
  *        the MSBs and `buffer[2]` holds the LSBs)
  * @param buffer The buffer to parse the seconds and third bytes of
  * @retval The bitwise concatenation of the second and third bytes of `buffer`
  */
-static uint32_t parse_new_crr(uint8_t *buffer)
+static uint32_t parse_new_ccr(uint8_t *buffer)
 {
   if (sizeof(buffer) < 3)
     return 0;
