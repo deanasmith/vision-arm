@@ -64,7 +64,8 @@ static void set_duty_cycle(TIM_HandleTypeDef *htim,
                            uint32_t channel);
 
 // Test functions
-static void test_servos(void);
+static uint16_t test_ccr = SERVO_MAX_CCR;
+static void test_servos(uint16_t *ccr);
 
 /* Private user code ---------------------------------------------------------*/
 
@@ -102,6 +103,10 @@ int main(void)
   uint8_t tx_buffer[100] = "Hello World!\n";
   uint8_t rx_buffer[100];
 
+  // while(1) {
+  //   test_servos(NULL);
+  //   HAL_Delay(1000);
+  // }
 
   /* Infinite loop */
   while (1)
@@ -160,7 +165,6 @@ int main(void)
       err_message = "Unable to parse joint ID or joint channel\n";
       HAL_UART_Transmit(&uart3_handle, (uint8_t *)err_message, (size_t)strlen(err_message), 100000U);
 
-      test_servos();  // FIXME: For debugging servo movement
     }
 
     HAL_UART_Transmit(&uart3_handle, tx_buffer, 13U, 1000000U);
@@ -171,33 +175,23 @@ int main(void)
 
 /**
  * @brief Test all servos by rotating between min and max angles
- * @param None
+ * @param ccr The target CCR for all servos. If `ccr` is NULL, a default value
+ *          is used instead
  * @retval None
  */
-static void test_servos(void)
+static void test_servos(uint16_t *ccr)
 {
-  static uint32_t tim1_ch1_ccr = TIMER_DEFAULT_CCR;
+  if (ccr == NULL)
+    test_ccr = (test_ccr - 500 > SERVO_MIN_CCR) ? test_ccr - 500 : SERVO_MAX_CCR;
+  else
+    test_ccr = *ccr;
 
-  if (tim1_ch1_ccr == SERVO_MAX_CCR) {
-    set_duty_cycle(&tim1_handle, SERVO_MAX_CCR, TIM_CHANNEL_1);
+  set_duty_cycle(&tim1_handle, SERVO_MAX_CCR, TIM_CHANNEL_1);
 
-    set_duty_cycle(&tim3_handle, SERVO_MAX_CCR, TIM_CHANNEL_1);
-    set_duty_cycle(&tim3_handle, SERVO_MAX_CCR, TIM_CHANNEL_2);
-    set_duty_cycle(&tim3_handle, SERVO_MAX_CCR, TIM_CHANNEL_3);
-    set_duty_cycle(&tim3_handle, SERVO_MAX_CCR, TIM_CHANNEL_4);
-
-    tim1_ch1_ccr = SERVO_MIN_CCR;
-  }
-  else {
-    set_duty_cycle(&tim1_handle, SERVO_MIN_CCR, TIM_CHANNEL_1);
-
-    set_duty_cycle(&tim3_handle, SERVO_MIN_CCR, TIM_CHANNEL_1);
-    set_duty_cycle(&tim3_handle, SERVO_MIN_CCR, TIM_CHANNEL_2);
-    set_duty_cycle(&tim3_handle, SERVO_MIN_CCR, TIM_CHANNEL_3);
-    set_duty_cycle(&tim3_handle, SERVO_MIN_CCR, TIM_CHANNEL_4);
-
-    tim1_ch1_ccr = SERVO_MAX_CCR;
-  }
+  set_duty_cycle(&tim3_handle, SERVO_MAX_CCR, TIM_CHANNEL_1);
+  set_duty_cycle(&tim3_handle, SERVO_MAX_CCR, TIM_CHANNEL_2);
+  set_duty_cycle(&tim3_handle, SERVO_MAX_CCR, TIM_CHANNEL_3);
+  set_duty_cycle(&tim3_handle, SERVO_MAX_CCR, TIM_CHANNEL_4);
 }
 
 
