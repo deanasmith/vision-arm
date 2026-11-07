@@ -16,6 +16,12 @@
   */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "stm32f0xx_hal.h"
+#include "stm32f0xx_hal_gpio.h"
+#include "stm32f0xx_hal_gpio_ex.h"
+#include "stm32f0xx_hal_rcc.h"
+#include "stm32f0xx_hal_rcc_ex.h"
+#include "stm32f0xx_hal_uart.h"
 
 /* Private includes ----------------------------------------------------------*/
 
@@ -26,10 +32,14 @@
 /* Private macro -------------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
+UART_HandleTypeDef uart3_handle = {0};
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void GPIO_Init(void);
+static void USART3_GPIO_Init(void);
+static void USART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 
@@ -49,51 +59,86 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  GPIO_Init();
+  USART_Init();
 
+  uint8_t tx_buffer[100] = "Hello World!\n";
+  uint8_t rx_buffer[100];
   /* Infinite loop */
   while (1)
   {
-
+    HAL_UART_Receive(&uart3_handle, rx_buffer, 100, 1000000U);
+    HAL_UART_Transmit(&uart3_handle, tx_buffer, 14U, 1000000U);
+    HAL_Delay(1000U);
   }
 }
+
 
 /**
-  * @brief System Clock Configuration
+  * @brief Initialize GPIO
+  * @param None
   * @retval None
   */
-void SystemClock_Config(void)
+static void GPIO_Init(void)
 {
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
-  /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL6;
-  RCC_OscInitStruct.PLL.PREDIV = RCC_PREDIV_DIV1;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
-
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
-  {
-    Error_Handler();
-  }
+  USART3_GPIO_Init();
 }
+
+
+/**
+  * @brief Initialize USART GPIO pins
+  * @param None
+  * @retval None
+  */
+static void USART3_GPIO_Init(void)
+{
+  GPIO_InitTypeDef uart_init_struct = {0};
+
+  // Initialize UART TX pin
+  uart_init_struct.Pin       = USART3_TX_Pin;
+  uart_init_struct.Mode      = GPIO_MODE_AF_PP;
+  uart_init_struct.Pull      = GPIO_NOPULL;
+  uart_init_struct.Speed     = GPIO_SPEED_FREQ_LOW;
+  uart_init_struct.Alternate = GPIO_AF4_USART3;
+
+  HAL_GPIO_Init(USART3_GPIO_Port, &uart_init_struct);
+
+  // Initialize UART RX pin
+  uart_init_struct.Pin       = USART3_RX_Pin;
+  uart_init_struct.Mode      = GPIO_MODE_AF_OD;
+  uart_init_struct.Pull      = GPIO_NOPULL;
+  uart_init_struct.Speed     = GPIO_SPEED_FREQ_LOW;
+  uart_init_struct.Alternate = GPIO_AF4_USART3;
+
+  HAL_GPIO_Init(USART3_GPIO_Port, &uart_init_struct);
+}
+
+
+/**
+  * @brief Initialize USART peripheral in UART mode
+  * @param None
+  * @retval None
+  */
+static void USART_Init(void)
+{
+  __HAL_RCC_USART3_CLK_ENABLE();
+
+  UART_InitTypeDef uart_init_struct = {0};
+  uart_init_struct.BaudRate   = 115200U;
+  uart_init_struct.WordLength = UART_WORDLENGTH_8B;
+  uart_init_struct.StopBits   = UART_STOPBITS_1;
+  uart_init_struct.Parity     = UART_PARITY_NONE;
+  uart_init_struct.Mode       = UART_MODE_TX_RX;
+
+  // Setup uart3_handle struct
+  uart3_handle.Instance = USART3;
+  uart3_handle.Init     = uart_init_struct;
+
+  HAL_UART_Init(&uart3_handle);
+}
+
 
 /**
   * @brief GPIO Initialization Function
@@ -170,6 +215,45 @@ static void MX_GPIO_Init(void)
 
 
 /**
+  * @brief System Clock Configuration
+  * @retval None
+  */
+void SystemClock_Config(void)
+{
+  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+
+  /** Initializes the RCC Oscillators according to the specified parameters
+  * in the RCC_OscInitTypeDef structure.
+  */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL6;
+  RCC_OscInitStruct.PLL.PREDIV = RCC_PREDIV_DIV1;
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Initializes the CPU, AHB and APB buses clocks
+  */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
+
+
+/**
   * @brief  This function is executed in case of error occurrence.
   * @retval None
   */
@@ -196,7 +280,7 @@ void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
-     // ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+        // printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
