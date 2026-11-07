@@ -15,7 +15,10 @@
   ******************************************************************************
   */
 /* Includes ------------------------------------------------------------------*/
-#include "main.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "stm32f0xx_hal.h"
 #include "stm32f0xx_hal_gpio.h"
 #include "stm32f0xx_hal_gpio_ex.h"
@@ -23,9 +26,7 @@
 #include "stm32f0xx_hal_rcc_ex.h"
 #include "stm32f0xx_hal_uart.h"
 #include "stm32f0xx_hal_tim.h"
-
-#include <stdlib.h>
-#include <string.h>
+#include "main.h"
 
 /* Private includes ----------------------------------------------------------*/
 
@@ -39,6 +40,7 @@
 UART_HandleTypeDef uart3_handle = {0};
 TIM_HandleTypeDef tim1_handle = {0};
 TIM_HandleTypeDef tim3_handle = {0};
+char err_message[100];
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -62,6 +64,7 @@ static uint32_t parse_new_ccr(uint8_t *rx_bytes);
 static void set_duty_cycle(TIM_HandleTypeDef *htim,
                            const uint32_t ccr,
                            uint32_t channel);
+static int set_servo_from_uart(uint32_t uart_timeout);
 
 // Test functions
 static uint16_t test_ccr = SERVO_MAX_CCR;
@@ -100,8 +103,10 @@ int main(void)
 
   // TODO: Send the ARR to the computer vision code on startup to let it
   // calculate duty cycle CCR values instead for faster processing
-  uint8_t tx_buffer[100] = "Hello World!\n";
+  char tx_buffer[100];
   uint8_t rx_buffer[100];
+  char *err_message = NULL;
+  int err = 0;
 
   // while(1) {
   //   test_servos(NULL);
@@ -111,65 +116,87 @@ int main(void)
   /* Infinite loop */
   while (1)
   {
-    HAL_UART_Receive(&uart3_handle, rx_buffer, 3U, 1000000U);
+    err = set_servo_from_uart(UART_DEFAULT_TIMEOUT);
 
-    Joint joint_id = (Joint)rx_buffer[0];
-    TIM_HandleTypeDef *joint_handle = NULL;
-    uint32_t joint_channel = ~0U;
-    char *err_message = NULL;
-
-    switch (joint_id) {
-      case HIP:
-        err_message = "Joint ID is '0' (HIP)\n";
-        HAL_UART_Transmit(&uart3_handle, (uint8_t *)err_message, (size_t)strlen(err_message), 100000U);
-        joint_handle = &tim1_handle;
-        joint_channel = TIM_CHANNEL_1;
-        break;
-      case HAND:
-        err_message = "Joint ID is '1' (HAND)\n";
-        HAL_UART_Transmit(&uart3_handle, (uint8_t *)err_message, (size_t)strlen(err_message), 100000U);
-        joint_handle = &tim3_handle;
-        joint_channel = TIM_CHANNEL_1;
-        break;
-      case ELBOW:
-        err_message = "Joint ID is '2' (ELBOW)\n";
-        HAL_UART_Transmit(&uart3_handle, (uint8_t *)err_message, (size_t)strlen(err_message), 100000U);
-        joint_handle = &tim3_handle;
-        joint_channel = TIM_CHANNEL_3;
-        break;
-      case WRIST:
-        err_message = "Joint ID is '3' (WRIST)\n";
-        HAL_UART_Transmit(&uart3_handle, (uint8_t *)err_message, (size_t)strlen(err_message), 100000U);
-        joint_handle = &tim3_handle;
-        joint_channel = TIM_CHANNEL_2;
-        break;
-      case SHOULDER:
-        err_message = "Joint ID is '4' (SHOULDER)\n";
-        HAL_UART_Transmit(&uart3_handle, (uint8_t *)err_message, (size_t)strlen(err_message), 100000U);
-        joint_handle = &tim3_handle;
-        joint_channel = TIM_CHANNEL_4;
-        break;
-      default:
-        err_message = "Invalid joint ID\n";
-        HAL_UART_Transmit(&uart3_handle, (uint8_t *)err_message, (size_t)strlen(err_message), 100000U);
-    }
-
-    if (joint_handle != NULL && joint_channel != ~0) {
-      uint32_t ccr = parse_new_ccr(rx_buffer);
-      set_duty_cycle(joint_handle, ccr, joint_channel);
-
-      snprintf((char *)tx_buffer, sizeof(tx_buffer), "Setting CCR to '%d'\n", ccr);
-      HAL_UART_Transmit(&uart3_handle, (uint8_t *)tx_buffer, (size_t)strlen(err_message), 100000U);
-    }
-    else {
-      err_message = "Unable to parse joint ID or joint channel\n";
-      HAL_UART_Transmit(&uart3_handle, (uint8_t *)err_message, (size_t)strlen(err_message), 100000U);
-
-    }
-
-    HAL_UART_Transmit(&uart3_handle, tx_buffer, 13U, 1000000U);
-    HAL_Delay(1000U);
+    if (err)
+      HAL_UART_Transmit(&uart3_handle, (uint8_t *)err_message, (size_t)strlen(err_message), UART_DEFAULT_TIMEOUT);
   }
+}
+
+
+/**
+ * @brief Receives a servo command over UART and executes it
+ * @param uart_timeout A timeout in ms for UART TX and RX
+ * @retval 0 if the command was executed successfully; otherwise, non-0
+ * @note If this command failed, an error message is placed in `err_message`
+ */
+static int set_servo_from_uart(uint32_t uart_timeout)
+{
+  uint8_t rx_buffer[3];
+  HAL_UART_Receive(&uart3_handle, rx_buffer, sizeof(rx_buffer), uart_timeout);
+
+  ServoCommand command = {0};
+  command.joint_id = (Joint)rx_buffer[0];
+
+  uint32_t err = 0;
+  char tx_buffer[100];
+
+  switch (command.joint_id) {
+    case JOINT_HIP:
+      snprintf((char *)tx_buffer, sizeof(tx_buffer), "Joint ID is '%d' (HIP)\n", JOINT_HIP);
+      HAL_UART_Transmit(&uart3_handle, (uint8_t *)tx_buffer, (size_t)strlen(tx_buffer), uart_timeout);
+
+      command.joint_handle = &tim1_handle;
+      command.joint_channel = TIM_CHANNEL_1;
+      break;
+    case JOINT_HAND:
+      snprintf((char *)tx_buffer, sizeof(tx_buffer), "Joint ID is '%d' (HAND)\n", JOINT_HAND);
+      HAL_UART_Transmit(&uart3_handle, (uint8_t *)tx_buffer, (size_t)strlen(tx_buffer), uart_timeout);
+
+      command.joint_handle = &tim3_handle;
+      command.joint_channel = TIM_CHANNEL_1;
+      break;
+    case JOINT_ELBOW:
+      snprintf((char *)tx_buffer, sizeof(tx_buffer), "Joint ID is '%d' (ELBOW)\n", JOINT_ELBOW);
+      HAL_UART_Transmit(&uart3_handle, (uint8_t *)tx_buffer, (size_t)strlen(tx_buffer), uart_timeout);
+
+      command.joint_handle = &tim3_handle;
+      command.joint_channel = TIM_CHANNEL_3;
+      break;
+    case JOINT_WRIST:
+      snprintf((char *)tx_buffer, sizeof(tx_buffer), "Joint ID is '%d' (WRIST)\n", JOINT_WRIST);
+      HAL_UART_Transmit(&uart3_handle, (uint8_t *)tx_buffer, (size_t)strlen(tx_buffer), uart_timeout);
+
+      command.joint_handle = &tim3_handle;
+      command.joint_channel = TIM_CHANNEL_2;
+      break;
+    case JOINT_SHOULDER:
+      snprintf((char *)tx_buffer, sizeof(tx_buffer), "Joint ID is '%d' (SHOULDER)\n", JOINT_SHOULDER);
+      HAL_UART_Transmit(&uart3_handle, (uint8_t *)tx_buffer, (size_t)strlen(tx_buffer), uart_timeout);
+
+      command.joint_handle = &tim3_handle;
+      command.joint_channel = TIM_CHANNEL_4;
+      break;
+    default:
+      err = 1;
+      strcpy(err_message, "Invalid joint ID\n");
+      HAL_UART_Transmit(&uart3_handle, (uint8_t *)err_message, (size_t)strlen(err_message), uart_timeout);
+  }
+
+  if (err) {
+    strcpy(err_message, "Unable to parse joint ID or joint channel\n");
+    HAL_UART_Transmit(&uart3_handle, (uint8_t *)err_message, (size_t)strlen(err_message), uart_timeout);
+  }
+  else {
+    command.target_ccr = parse_new_ccr(rx_buffer);
+
+    snprintf((char *)tx_buffer, sizeof(tx_buffer), "Setting CCR to '%d'\n", command.target_ccr);
+    HAL_UART_Transmit(&uart3_handle, (uint8_t *)tx_buffer, (size_t)strlen(tx_buffer), uart_timeout);
+
+    set_duty_cycle(command.joint_handle, command.target_ccr, command.joint_channel);
+  }
+
+  return err;
 }
 
 
