@@ -26,10 +26,25 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f0xx_hal.h"
+#include "stm32f0xx_hal_tim.h"
 
 /* Private includes ----------------------------------------------------------*/
 
 /* Exported types ------------------------------------------------------------*/
+typedef enum {
+	JOINT_HIP = 0,
+	JOINT_HAND,
+	JOINT_ELBOW,
+	JOINT_WRIST,
+	JOINT_SHOULDER,
+} Joint;
+
+typedef struct {
+	TIM_HandleTypeDef *joint_handle;	// The timer handle of the target joint
+	uint32_t joint_channel;			// The timer channel of the target joint
+	uint16_t target_ccr;			// The target angle as a CCR value
+	Joint joint_id;				// The target joint's ID
+} ServoCommand;
 
 /* Exported constants --------------------------------------------------------*/
 
@@ -46,9 +61,11 @@ void Error_Handler(void);
 #define TIMER_PSC 14U
 #define TIMER_ARR 64000U
 
-#define SERVO_MAX_CRR ((uint32_t)(SERVO_MAX_DUTY_PERCENT*TIMER_ARR))
-#define SERVO_MIN_CRR ((uint32_t)(SERVO_MIN_DUTY_PERCENT*TIMER_ARR))
-#define TIMER_DEFAULT_CRR ((uint32_t)(SERVO_MIN_DUTY_PERCENT*TIMER_ARR))
+#define SERVO_MAX_CCR ((uint32_t)(SERVO_MAX_DUTY_PERCENT*TIMER_ARR))
+#define SERVO_MIN_CCR ((uint32_t)(SERVO_MIN_DUTY_PERCENT*TIMER_ARR))
+#define TIMER_DEFAULT_CCR ((uint32_t)SERVO_MAX_CCR)//((uint32_t)(SERVO_MIN_DUTY_PERCENT*TIMER_ARR))
+
+#define UART_DEFAULT_TIMEOUT 1000000U
 
 //Pin definitions
 #define NCS_MEMS_SPI_Pin GPIO_PIN_0

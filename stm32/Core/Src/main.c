@@ -15,7 +15,10 @@
   ******************************************************************************
   */
 /* Includes ------------------------------------------------------------------*/
-#include "main.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "stm32f0xx_hal.h"
 #include "stm32f0xx_hal_gpio.h"
 #include "stm32f0xx_hal_gpio_ex.h"
@@ -23,6 +26,7 @@
 #include "stm32f0xx_hal_rcc_ex.h"
 #include "stm32f0xx_hal_uart.h"
 #include "stm32f0xx_hal_tim.h"
+#include "main.h"
 
 /* Private includes ----------------------------------------------------------*/
 
@@ -36,6 +40,7 @@
 UART_HandleTypeDef uart3_handle = {0};
 TIM_HandleTypeDef tim1_handle = {0};
 TIM_HandleTypeDef tim3_handle = {0};
+char err_message[100];
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -55,9 +60,15 @@ static void configure_timers(void);
 
 // Helper functions
 static TIM_Base_InitTypeDef get_timer_init_struct(void);
+static uint32_t parse_new_ccr(uint8_t *rx_bytes);
 static void set_duty_cycle(TIM_HandleTypeDef *htim,
                            const uint32_t ccr,
                            uint32_t channel);
+static int set_servo_from_uart(uint32_t uart_timeout);
+
+// Test functions
+static uint16_t test_ccr = SERVO_MAX_CCR;
+static void test_servos(uint16_t *ccr);
 
 /* Private user code ---------------------------------------------------------*/
 
@@ -92,38 +103,122 @@ int main(void)
 
   // TODO: Send the ARR to the computer vision code on startup to let it
   // calculate duty cycle CCR values instead for faster processing
-  uint8_t tx_buffer[100] = "Hello World!\n";
+  char tx_buffer[100];
   uint8_t rx_buffer[100];
+  char *err_message = NULL;
+  int err = 0;
 
-  uint32_t tim1_ch1_crr = TIMER_DEFAULT_CRR;  // FIXME: For debugging
-
+  // while(1) {
+  //   test_servos(NULL);
+  //   HAL_Delay(1000);
+  // }
 
   /* Infinite loop */
   while (1)
   {
-    HAL_UART_Receive(&uart3_handle, rx_buffer, 100, 1000000U);
-    if (tim1_ch1_crr == SERVO_MIN_CRR) {
-      set_duty_cycle(&tim1_handle, SERVO_MAX_CRR, TIM_CHANNEL_1);
+    err = set_servo_from_uart(UART_DEFAULT_TIMEOUT);
 
-      set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_1);
-      set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_2);
-      set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_3);
-      set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_4);
-      tim1_ch1_crr = SERVO_MAX_CRR;
-    }
-    else {
-      set_duty_cycle(&tim1_handle, SERVO_MIN_CRR, TIM_CHANNEL_1);
-
-      set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_1);
-      set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_2);
-      set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_3);
-      set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_4);
-      tim1_ch1_crr = SERVO_MIN_CRR;
-    }
-
-    HAL_UART_Transmit(&uart3_handle, tx_buffer, 14U, 1000000U);
-    HAL_Delay(1000U);
+    if (err)
+      HAL_UART_Transmit(&uart3_handle, (uint8_t *)err_message, (size_t)strlen(err_message), UART_DEFAULT_TIMEOUT);
   }
+}
+
+
+/**
+ * @brief Receives a servo command over UART and executes it
+ * @param uart_timeout A timeout in ms for UART TX and RX
+ * @retval 0 if the command was executed successfully; otherwise, non-0
+ * @note If this command failed, an error message is placed in `err_message`
+ */
+static int set_servo_from_uart(uint32_t uart_timeout)
+{
+  uint8_t rx_buffer[3];
+  HAL_UART_Receive(&uart3_handle, rx_buffer, sizeof(rx_buffer), uart_timeout);
+
+  ServoCommand command = {0};
+  command.joint_id = (Joint)rx_buffer[0];
+
+  uint32_t err = 0;
+  char tx_buffer[100];
+
+  switch (command.joint_id) {
+    case JOINT_HIP:
+      snprintf((char *)tx_buffer, sizeof(tx_buffer), "Joint ID is '%d' (HIP)\n", JOINT_HIP);
+      HAL_UART_Transmit(&uart3_handle, (uint8_t *)tx_buffer, (size_t)strlen(tx_buffer), uart_timeout);
+
+      command.joint_handle = &tim1_handle;
+      command.joint_channel = TIM_CHANNEL_1;
+      break;
+    case JOINT_HAND:
+      snprintf((char *)tx_buffer, sizeof(tx_buffer), "Joint ID is '%d' (HAND)\n", JOINT_HAND);
+      HAL_UART_Transmit(&uart3_handle, (uint8_t *)tx_buffer, (size_t)strlen(tx_buffer), uart_timeout);
+
+      command.joint_handle = &tim3_handle;
+      command.joint_channel = TIM_CHANNEL_1;
+      break;
+    case JOINT_ELBOW:
+      snprintf((char *)tx_buffer, sizeof(tx_buffer), "Joint ID is '%d' (ELBOW)\n", JOINT_ELBOW);
+      HAL_UART_Transmit(&uart3_handle, (uint8_t *)tx_buffer, (size_t)strlen(tx_buffer), uart_timeout);
+
+      command.joint_handle = &tim3_handle;
+      command.joint_channel = TIM_CHANNEL_3;
+      break;
+    case JOINT_WRIST:
+      snprintf((char *)tx_buffer, sizeof(tx_buffer), "Joint ID is '%d' (WRIST)\n", JOINT_WRIST);
+      HAL_UART_Transmit(&uart3_handle, (uint8_t *)tx_buffer, (size_t)strlen(tx_buffer), uart_timeout);
+
+      command.joint_handle = &tim3_handle;
+      command.joint_channel = TIM_CHANNEL_2;
+      break;
+    case JOINT_SHOULDER:
+      snprintf((char *)tx_buffer, sizeof(tx_buffer), "Joint ID is '%d' (SHOULDER)\n", JOINT_SHOULDER);
+      HAL_UART_Transmit(&uart3_handle, (uint8_t *)tx_buffer, (size_t)strlen(tx_buffer), uart_timeout);
+
+      command.joint_handle = &tim3_handle;
+      command.joint_channel = TIM_CHANNEL_4;
+      break;
+    default:
+      err = 1;
+      strcpy(err_message, "Invalid joint ID\n");
+      HAL_UART_Transmit(&uart3_handle, (uint8_t *)err_message, (size_t)strlen(err_message), uart_timeout);
+  }
+
+  if (err) {
+    strcpy(err_message, "Unable to parse joint ID or joint channel\n");
+    HAL_UART_Transmit(&uart3_handle, (uint8_t *)err_message, (size_t)strlen(err_message), uart_timeout);
+  }
+  else {
+    command.target_ccr = parse_new_ccr(rx_buffer);
+
+    snprintf((char *)tx_buffer, sizeof(tx_buffer), "Setting CCR to '%d'\n", command.target_ccr);
+    HAL_UART_Transmit(&uart3_handle, (uint8_t *)tx_buffer, (size_t)strlen(tx_buffer), uart_timeout);
+
+    set_duty_cycle(command.joint_handle, command.target_ccr, command.joint_channel);
+  }
+
+  return err;
+}
+
+
+/**
+ * @brief Test all servos by rotating between min and max angles
+ * @param ccr The target CCR for all servos. If `ccr` is NULL, a default value
+ *          is used instead
+ * @retval None
+ */
+static void test_servos(uint16_t *ccr)
+{
+  if (ccr == NULL)
+    test_ccr = (test_ccr - 500 > SERVO_MIN_CCR) ? test_ccr - 500 : SERVO_MAX_CCR;
+  else
+    test_ccr = *ccr;
+
+  set_duty_cycle(&tim1_handle, SERVO_MAX_CCR, TIM_CHANNEL_1);
+
+  set_duty_cycle(&tim3_handle, SERVO_MAX_CCR, TIM_CHANNEL_1);
+  set_duty_cycle(&tim3_handle, SERVO_MAX_CCR, TIM_CHANNEL_2);
+  set_duty_cycle(&tim3_handle, SERVO_MAX_CCR, TIM_CHANNEL_3);
+  set_duty_cycle(&tim3_handle, SERVO_MAX_CCR, TIM_CHANNEL_4);
 }
 
 
@@ -313,7 +408,7 @@ static void configure_timers(void)
   TIM_OC_InitTypeDef timer_config = {0};
 
   timer_config.OCMode     = TIM_OCMODE_PWM1;
-  timer_config.Pulse      = TIMER_DEFAULT_CRR;
+  timer_config.Pulse      = TIMER_DEFAULT_CCR;
   timer_config.OCPolarity = TIM_OCPOLARITY_HIGH;
 
   HAL_TIM_PWM_ConfigChannel(&tim1_handle, &timer_config, TIM_CHANNEL_1);
@@ -322,6 +417,22 @@ static void configure_timers(void)
   HAL_TIM_PWM_ConfigChannel(&tim3_handle, &timer_config, TIM_CHANNEL_2);
   HAL_TIM_PWM_ConfigChannel(&tim3_handle, &timer_config, TIM_CHANNEL_3);
   HAL_TIM_PWM_ConfigChannel(&tim3_handle, &timer_config, TIM_CHANNEL_4);
+}
+
+
+/**
+ * @brief Parses the second and third bytes of a buffer as a 16-bit integer
+ * @note The two bytes are assumed to be in big endian order (`buffer[1]` holds
+ *        the MSBs and `buffer[2]` holds the LSBs)
+ * @param buffer The buffer to parse the seconds and third bytes of
+ * @retval The bitwise concatenation of the second and third bytes of `buffer`
+ */
+static uint32_t parse_new_ccr(uint8_t *buffer)
+{
+  if (sizeof(buffer) < 3)
+    return 0;
+
+  return (buffer[1] << 8) | buffer[2];
 }
 
 
