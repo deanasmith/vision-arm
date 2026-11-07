@@ -22,6 +22,7 @@
 #include "stm32f0xx_hal_rcc.h"
 #include "stm32f0xx_hal_rcc_ex.h"
 #include "stm32f0xx_hal_uart.h"
+#include "stm32f0xx_hal_tim.h"
 
 /* Private includes ----------------------------------------------------------*/
 
@@ -33,13 +34,30 @@
 
 /* Private variables ---------------------------------------------------------*/
 UART_HandleTypeDef uart3_handle = {0};
+TIM_HandleTypeDef tim1_handle = {0};
+TIM_HandleTypeDef tim3_handle = {0};
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+
+// GPIO initialization
 static void MX_GPIO_Init(void);
 static void GPIO_Init(void);
 static void USART3_GPIO_Init(void);
+static void TIM1_GPIO_Init(void);
+static void TIM3_GPIO_Init(void);
+
+// Peripheral initialization
 static void USART_Init(void);
+static void TIM1_Init(void);
+static void TIM3_Init(void);
+static void configure_timers(void);
+
+// Helper functions
+static TIM_Base_InitTypeDef get_timer_init_struct(void);
+static void set_duty_cycle(TIM_HandleTypeDef *htim,
+                           const uint32_t ccr,
+                           uint32_t channel);
 
 /* Private user code ---------------------------------------------------------*/
 
@@ -61,13 +79,48 @@ int main(void)
   MX_GPIO_Init();
   GPIO_Init();
   USART_Init();
+  TIM1_Init();
+  TIM3_Init();
+  configure_timers();
 
+  HAL_TIM_PWM_Start(&tim1_handle, TIM_CHANNEL_1);
+
+  HAL_TIM_PWM_Start(&tim3_handle, TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&tim3_handle, TIM_CHANNEL_2);
+  HAL_TIM_PWM_Start(&tim3_handle, TIM_CHANNEL_3);
+  HAL_TIM_PWM_Start(&tim3_handle, TIM_CHANNEL_4);
+
+  // TODO: Send the ARR to the computer vision code on startup to let it
+  // calculate duty cycle CCR values instead for faster processing
   uint8_t tx_buffer[100] = "Hello World!\n";
   uint8_t rx_buffer[100];
+
+  uint32_t tim1_ch1_crr = TIMER_DEFAULT_CRR;  // FIXME: For debugging
+
+
   /* Infinite loop */
   while (1)
   {
     HAL_UART_Receive(&uart3_handle, rx_buffer, 100, 1000000U);
+    if (tim1_ch1_crr == SERVO_MIN_CRR) {
+      set_duty_cycle(&tim1_handle, SERVO_MAX_CRR, TIM_CHANNEL_1);
+
+      set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_1);
+      set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_2);
+      set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_3);
+      set_duty_cycle(&tim3_handle, SERVO_MAX_CRR, TIM_CHANNEL_4);
+      tim1_ch1_crr = SERVO_MAX_CRR;
+    }
+    else {
+      set_duty_cycle(&tim1_handle, SERVO_MIN_CRR, TIM_CHANNEL_1);
+
+      set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_1);
+      set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_2);
+      set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_3);
+      set_duty_cycle(&tim3_handle, SERVO_MIN_CRR, TIM_CHANNEL_4);
+      tim1_ch1_crr = SERVO_MIN_CRR;
+    }
+
     HAL_UART_Transmit(&uart3_handle, tx_buffer, 14U, 1000000U);
     HAL_Delay(1000U);
   }
@@ -81,9 +134,13 @@ int main(void)
   */
 static void GPIO_Init(void)
 {
+  __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
 
   USART3_GPIO_Init();
+  TIM1_GPIO_Init();
+  TIM3_GPIO_Init();
 }
 
 
@@ -117,6 +174,49 @@ static void USART3_GPIO_Init(void)
 
 
 /**
+ * @brief Initailize TIM1 GPIO pins
+ * @param None
+ * @retval None
+ */
+static void TIM1_GPIO_Init(void)
+{
+  GPIO_InitTypeDef tim1_init_struct = {0};
+
+  tim1_init_struct.Pin       = TIM1_CH1_Pin;
+  tim1_init_struct.Mode      = GPIO_MODE_AF_PP;
+  tim1_init_struct.Pull      = GPIO_NOPULL;
+  tim1_init_struct.Speed     = GPIO_SPEED_FREQ_LOW;
+  tim1_init_struct.Alternate = GPIO_AF2_TIM1;
+
+  HAL_GPIO_Init(TIM1_GPIO_Port, &tim1_init_struct);
+}
+
+
+/**
+ * @brief Initailize TIM3 GPIO pins
+ * @param None
+ * @retval None
+ */
+static void TIM3_GPIO_Init(void)
+{
+  GPIO_InitTypeDef tim3_init_struct = {0};
+
+  tim3_init_struct.Pin =
+    TIM3_CH1_Pin |
+    TIM3_CH2_Pin |
+    TIM3_CH3_Pin |
+    TIM3_CH4_Pin;
+
+  tim3_init_struct.Mode      = GPIO_MODE_AF_PP;
+  tim3_init_struct.Pull      = GPIO_NOPULL;
+  tim3_init_struct.Speed     = GPIO_SPEED_FREQ_LOW;
+  tim3_init_struct.Alternate = GPIO_AF0_TIM3;
+
+  HAL_GPIO_Init(TIM3_GPIO_Port, &tim3_init_struct);
+}
+
+
+/**
   * @brief Initialize USART peripheral in UART mode
   * @param None
   * @retval None
@@ -137,6 +237,114 @@ static void USART_Init(void)
   uart3_handle.Init     = uart_init_struct;
 
   HAL_UART_Init(&uart3_handle);
+}
+
+
+/**
+ * @brief Initialize TIM1 peripheral in PWM output mode
+ * @param None
+ * @retval None
+ */
+static void TIM1_Init(void)
+{
+  __HAL_RCC_TIM1_CLK_ENABLE();
+
+  tim1_handle.Instance = TIM1;
+  tim1_handle.Init     = get_timer_init_struct();
+  tim1_handle.Channel  = TIM_CHANNEL_1;
+
+  HAL_TIM_PWM_Init(&tim1_handle);
+}
+
+
+/**
+ * @brief Initialize TIM3 peripheral in PWM output mode
+ * @param None
+ * @retval None
+ */
+static void TIM3_Init(void)
+{
+  __HAL_RCC_TIM3_CLK_ENABLE();
+
+  tim3_handle.Instance = TIM3;
+  tim3_handle.Init     = get_timer_init_struct();
+  tim3_handle.Channel  =
+    TIM_CHANNEL_1 |
+    TIM_CHANNEL_2 |
+    TIM_CHANNEL_3 |
+    TIM_CHANNEL_4;
+
+  HAL_TIM_PWM_Init(&tim3_handle);
+}
+
+
+/**
+ * @brief Returns a timer init struct for baseline PWM setup
+ * @param None
+ * @retval A timer init struct for baseline PWM setup
+ */
+static TIM_Base_InitTypeDef get_timer_init_struct(void)
+{
+  // TODO: Set the prescaler and ARR values dynamically
+  // HAL_RCC_GetPCLK1Freq();
+
+  // Set the timer to 50 Hz with an 48MHz PCLK
+  // PCLK = 48 MHz
+  // f_target = 50 Hz
+  // PSC = 14   // This is the minimum for ARR to be within the 16-bit register
+  // ARR = PCLK/((PSC + 1)*f_target)  // ARR == 64000
+  TIM_Base_InitTypeDef timer_init_struct = {0};
+  timer_init_struct.Prescaler         = TIMER_PSC;
+  timer_init_struct.CounterMode       = TIM_COUNTERMODE_UP;
+  timer_init_struct.Period            = TIMER_ARR;
+  timer_init_struct.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+
+  return timer_init_struct;
+}
+
+
+/**
+ * @brief Configure timer peripherals for default PWM settings
+ * @param None
+ * @retval None
+ */
+static void configure_timers(void)
+{
+  TIM_OC_InitTypeDef timer_config = {0};
+
+  timer_config.OCMode     = TIM_OCMODE_PWM1;
+  timer_config.Pulse      = TIMER_DEFAULT_CRR;
+  timer_config.OCPolarity = TIM_OCPOLARITY_HIGH;
+
+  HAL_TIM_PWM_ConfigChannel(&tim1_handle, &timer_config, TIM_CHANNEL_1);
+
+  HAL_TIM_PWM_ConfigChannel(&tim3_handle, &timer_config, TIM_CHANNEL_1);
+  HAL_TIM_PWM_ConfigChannel(&tim3_handle, &timer_config, TIM_CHANNEL_2);
+  HAL_TIM_PWM_ConfigChannel(&tim3_handle, &timer_config, TIM_CHANNEL_3);
+  HAL_TIM_PWM_ConfigChannel(&tim3_handle, &timer_config, TIM_CHANNEL_4);
+}
+
+
+/**
+ * @brief Sets the duty cycle for an initialized PWM timer
+ * @param htim TIM PWM handle
+ * @param ccr The new CCR value for the timer
+ * @param channel The channel to set the duty cycle for. See @ref
+ *          HAL_TIM_PWM_ConfigChannel for valid values
+ *
+ * @retval None
+ */
+static void set_duty_cycle(TIM_HandleTypeDef *htim,
+                           const uint32_t ccr,
+                           uint32_t channel)
+{
+  TIM_OC_InitTypeDef timer_config = {0};
+
+  timer_config.OCMode = TIM_OCMODE_PWM1;
+  timer_config.Pulse  = ccr;
+  timer_config.OCPolarity = TIM_OCPOLARITY_HIGH;
+
+  HAL_TIM_PWM_ConfigChannel(htim, &timer_config, channel);
 }
 
 

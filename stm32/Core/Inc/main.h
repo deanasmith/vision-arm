@@ -39,6 +39,18 @@ extern "C" {
 void Error_Handler(void);
 
 /* Private defines -----------------------------------------------------------*/
+#define SERVO_MAX_DUTY_PERCENT 0.125	// This gives the min servo angle
+#define SERVO_MIN_DUTY_PERCENT 0.025	// This gives the max servo angle
+
+// Default timer values
+#define TIMER_PSC 14U
+#define TIMER_ARR 64000U
+
+#define SERVO_MAX_CRR ((uint32_t)(SERVO_MAX_DUTY_PERCENT*TIMER_ARR))
+#define SERVO_MIN_CRR ((uint32_t)(SERVO_MIN_DUTY_PERCENT*TIMER_ARR))
+#define TIMER_DEFAULT_CRR ((uint32_t)(SERVO_MIN_DUTY_PERCENT*TIMER_ARR))
+
+//Pin definitions
 #define NCS_MEMS_SPI_Pin GPIO_PIN_0
 #define NCS_MEMS_SPI_GPIO_Port GPIOC
 #define MEMS_INT1_Pin GPIO_PIN_1
@@ -81,6 +93,45 @@ void Error_Handler(void);
 #define USART3_TX_Pin GPIO_PIN_10
 #define USART3_RX_Pin GPIO_PIN_11
 
+// TIM1
+#define TIM1_GPIO_Port GPIOA
+#define TIM1_CH1_Pin GPIO_PIN_8
+// #define TIM1_CH2_Pin GPIO_PIN_9	// TIM1_CH2 isn't needed
+// #define TIM1_CH3_Pin GPIO_PIN_10	// TIM1_CH3 isn't needed
+// #define TIM1_CH4_Pin GPIO_PIN_11	// TIM1_CH4 is assigned to the USER USB port on our STM32, so it can't be used
+
+// TIM2
+#define TIM2_CH1_GPIO_Port GPIOA
+#define TIM2_CH1_Pin GPIO_PIN_15
+
+#define TIM2_GPIO_Port GPIOB
+#define TIM2_CH2_Pin GPIO_PIN_3
+#define TIM2_CH3_Pin GPIO_PIN_10
+#define TIM2_CH4_Pin GPIO_PIN_11
+
+// TIM3
+#define TIM3_GPIO_Port GPIOC
+#define TIM3_CH1_Pin GPIO_PIN_6
+#define TIM3_CH2_Pin GPIO_PIN_7
+#define TIM3_CH3_Pin GPIO_PIN_8
+#define TIM3_CH4_Pin GPIO_PIN_9
+
+// TIM14
+#define TIM14_GPIO_Port GPIOA
+#define TIM14_CH1_Pin GPIO_PIN_4
+
+// TIM15
+#define TIM15_GPIO_Port GPIOB
+#define TIM15_CH1_Pin GPIO_PIN_14
+#define TIM15_CH2_Pin GPIO_PIN_15
+
+// TIM16
+#define TIM16_GPIO_Port GPIOB
+#define TIM16_CH1_Pin GPIO_PIN_8
+
+// TIM17
+#define TIM17_GPIO_Port GPIOB
+#define TIM17_CH1_Pin GPIO_PIN_9
 
 
 #ifdef __cplusplus
