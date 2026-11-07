@@ -24,4 +24,5 @@ The following STM32 toolchain setup is for Linux systems. A Linux system is reco
     - `openocd`
 2. Navigate to the `stm32` directory
 3. Create the build directory with `cmake -B build -S .`
-4. Compile the microcontroller code with `cmake --build build`
+4. Compile the microcontroller code with `cmake --build build` (this can be skipped if you also want to flash the STM32)
+5. Flash the microcontroller with `cmake --build build --target flash`.
