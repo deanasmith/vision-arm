@@ -8,9 +8,11 @@ virtual COM port.
 
 The serial node is discovered. On macOS the single ``/dev/cu.usb*`` or
 ``/dev/cu.wchusbserial*`` callout device is used (never the matching
-``tty.*`` node). On Linux the single ``/dev/ttyUSB*`` device is used, and
-``/dev/ttyUSB0`` remains the default when that listing is empty. More than
-one match is left for ``--port`` to choose.
+``tty.*`` node). When none of those are present, discovery returns None
+and mono mode warns and keeps running with UART disabled. On Linux the
+single ``/dev/ttyUSB*`` device is used, and ``/dev/ttyUSB0`` remains the
+default when that listing is empty. More than one match is left for
+``--port`` to choose.
 """
 
 from __future__ import annotations
@@ -32,7 +34,7 @@ _LINUX_GLOBS = ("ttyUSB*",)
 
 
 class UartSelectionError(Exception):
-    """The USB-UART adapter could not be chosen without ``--port``."""
+    """Several USB-UART adapters matched and ``--port`` was not passed."""
 
 
 def list_uart_devices(platform: str | None = None, directory: str = "/dev") -> list[str]:
@@ -50,12 +52,14 @@ def resolve_uart_port(
     *,
     platform: str | None = None,
     directory: str = "/dev",
-) -> str:
-    """Pick one serial device, or raise ``UartSelectionError``.
+) -> str | None:
+    """Pick one serial device.
 
     An explicit ``port`` is returned unchanged. Otherwise the platform
-    listing must contain exactly one adapter. Linux falls back to
-    ``DEFAULT_PORT`` when ``/dev/ttyUSB*`` is empty.
+    listing must contain exactly one adapter. macOS returns None when
+    that listing is empty so the caller can run with UART disabled.
+    Linux falls back to ``DEFAULT_PORT`` when ``/dev/ttyUSB*`` is empty.
+    More than one match raises ``UartSelectionError``.
     """
     if port is not None and port.strip():
         return port
@@ -70,11 +74,7 @@ def resolve_uart_port(
             "Several USB-UART adapters found. Pass --port to choose one:\n" + listing
         )
     if system == "darwin":
-        raise UartSelectionError(
-            "No USB-UART adapter found. "
-            "Looked for /dev/cu.usb* and /dev/cu.wchusbserial*. "
-            "Plug in the adapter or pass --port."
-        )
+        return None
     return DEFAULT_PORT
 
 # set_servo_from_uart prints one of these before it reads the next command.

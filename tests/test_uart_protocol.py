@@ -152,11 +152,11 @@ class ResolveUartPortTests(unittest.TestCase):
         self.assertIn("cu.wchusbserial110", message)
         self.assertIn("--port", message)
 
-    def test_darwin_missing_adapter(self):
+    def test_darwin_missing_adapter_returns_none(self):
         self.touch("cu.debug-console")
-        with self.assertRaises(UartSelectionError) as caught:
+        self.assertIsNone(
             resolve_uart_port(platform="darwin", directory=self.tmp.name)
-        self.assertIn("No USB-UART adapter found", str(caught.exception))
+        )
 
     def test_linux_uses_the_only_ttyusb_node(self):
         chosen = self.touch("ttyUSB1")

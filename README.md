@@ -14,7 +14,7 @@ The project has several components that need to be running:
 - `track`: Start tracking with multiple cameras
 - `mono`: Start with a single camera (mostly for debugging). The left shoulder and elbow angles are sent to the STM32 over UART.
 
-`uv run python main.py mono` discovers the USB-UART adapter and opens it at 115200 8N1. On macOS that is the only `/dev/cu.usb*` or `/dev/cu.wchusbserial*` device. On Linux it is the only `/dev/ttyUSB*` device, or `/dev/ttyUSB0` when that listing is empty. If several adapters match, the command prints them and exits. Pass `--port` to choose one:
+`uv run python main.py mono` discovers the USB-UART adapter and opens it at 115200 8N1. On macOS that is the only `/dev/cu.usb*` or `/dev/cu.wchusbserial*` device. If none is listed, mono warns on stderr and keeps the camera running with UART off. On Linux it is the only `/dev/ttyUSB*` device, or `/dev/ttyUSB0` when that listing is empty. If several adapters match, the command prints them and exits. Pass `--port` to choose one:
 
 ```
 uv run python main.py mono --port /dev/cu.usbserial-10

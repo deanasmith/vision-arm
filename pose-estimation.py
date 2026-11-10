@@ -1,12 +1,17 @@
 import argparse
 import sys
 
-import cv2
-import mediapipe as mp
 import numpy as np
 
 from arm.protocol import Joint
 from arm.uart import DEFAULT_BAUD, ArmUart, UartSelectionError, resolve_uart_port
+
+NO_ADAPTER_WARNING = (
+    "UART disabled: No USB-UART adapter found. "
+    "Looked for /dev/cu.usb* and /dev/cu.wchusbserial*. "
+    "Plug in the adapter or pass --port. "
+    "The camera loop will keep running."
+)
 
 # --- Angle Calculation Functions ---
 def calculate_3d_angle(a, b, c):
@@ -43,7 +48,8 @@ def parse_args(argv=None):
         default=None,
         help=(
             "Serial device wired to STM32 USART3. "
-            "Default: the only /dev/cu.usb* or /dev/cu.wchusbserial* adapter on macOS, "
+            "Default: the only /dev/cu.usb* or /dev/cu.wchusbserial* adapter on macOS "
+            "(UART stays off when none are listed), "
             "or the only /dev/ttyUSB* device on Linux (/dev/ttyUSB0 when none are listed)."
         ),
     )
@@ -57,6 +63,9 @@ def parse_args(argv=None):
 
 
 def open_arm(port, baud):
+    if port is None:
+        print(NO_ADAPTER_WARNING, file=sys.stderr)
+        return None
     try:
         link = ArmUart(port, baud)
     except (OSError, ValueError) as exc:
@@ -74,14 +83,31 @@ def open_arm(port, baud):
     return link
 
 
-def main(argv=None) -> int:
-    args = parse_args(argv)
+def setup_link(port, baud, *, platform=None, directory="/dev"):
+    """Open the UART link, or return None when it should stay off.
+
+    No matching adapter warns and returns None. Several adapters print
+    the choices and raise ``UartSelectionError``.
+    """
     try:
-        args.port = resolve_uart_port(args.port)
+        chosen = resolve_uart_port(port, platform=platform, directory=directory)
     except UartSelectionError as exc:
         print(exc, file=sys.stderr)
+        raise
+    return open_arm(chosen, baud)
+
+
+def main(argv=None) -> int:
+    import cv2
+    import mediapipe as mp
+
+    args = parse_args(argv)
+    try:
+        link = setup_link(args.port, args.baud)
+    except UartSelectionError:
         return 1
-    link = open_arm(args.port, args.baud)
+    if link is not None:
+        args.port = link.port
 
     # --- MediaPipe Setup ---
     mp_holistic = mp.solutions.holistic
