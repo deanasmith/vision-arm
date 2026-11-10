@@ -4,8 +4,8 @@ import unittest
 from typing import List
 
 from arm.protocol import (
-    SERVO_MAX_CCR,
-    SERVO_MIN_CCR,
+    SERVO_FULL_CCR,
+    SERVO_ZERO_CCR,
     Joint,
     angle_to_ccr,
     encode_joint_command,
@@ -36,24 +36,29 @@ class _FakeSerial:
 
 
 class AngleToCcrTests(unittest.TestCase):
-    def test_endpoints_match_firmware_constants(self):
-        self.assertEqual(SERVO_MAX_CCR, 8000)
-        self.assertEqual(SERVO_MIN_CCR, 1600)
+    def test_endpoints(self):
+        # 0° stays on the power-on pulse. 180° is 4.0 ms longer (12800 counts).
+        self.assertEqual(SERVO_ZERO_CCR, 8000)
+        self.assertEqual(SERVO_FULL_CCR, 20800)
         self.assertEqual(angle_to_ccr(0), 8000)
-        self.assertEqual(angle_to_ccr(180), 1600)
+        self.assertEqual(angle_to_ccr(180), 20800)
 
-    def test_nine_degrees_subtracts_span_from_min_angle_pulse(self):
-        # 9/180 of the 6400-count window is 320. The protocol worksheet
-        # stops there (CCR 320). The firmware window is 1600..8000, and
-        # 0° is the 8000-count end, so the pulse is 8000 - 320.
-        self.assertEqual(angle_to_ccr(9), 7680)
+    def test_nine_degrees_is_twice_the_old_chart_step(self):
+        # 9/180 of the old 6400-count chart window is 320. The horn only
+        # covered about half the requested angle across that window, so the
+        # step is 640 counts and the pulse is 8000 + 640.
+        self.assertEqual(angle_to_ccr(9), 8640)
 
     def test_midpoint(self):
-        self.assertEqual(angle_to_ccr(90), 4800)
+        self.assertEqual(angle_to_ccr(90), 14400)
+
+    def test_one_degree_moves_one_degree_of_the_4ms_span(self):
+        # 12800/180 = 71.111 counts, which is 1/180 of the 4.0 ms span.
+        self.assertEqual(angle_to_ccr(1), 8071)
 
     def test_clamps_to_servo_travel(self):
         self.assertEqual(angle_to_ccr(-10), 8000)
-        self.assertEqual(angle_to_ccr(270), 1600)
+        self.assertEqual(angle_to_ccr(270), 20800)
 
     def test_rejects_non_finite(self):
         with self.assertRaises(ValueError):
@@ -68,16 +73,16 @@ class PacketTests(unittest.TestCase):
         )
 
     def test_elbow_nine_degrees_is_big_endian(self):
-        # joint 2, CCR 7680 = 0x1E00
-        self.assertEqual(encode_joint_command(Joint.ELBOW, 9), bytes((0x02, 0x1E, 0x00)))
+        # joint 2, CCR 8640 = 0x21C0
+        self.assertEqual(encode_joint_command(Joint.ELBOW, 9), bytes((0x02, 0x21, 0xC0)))
 
     def test_shoulder_at_rest_is_startup_pulse(self):
         # joint 4, CCR 8000 = 0x1F40 (TIMER_DEFAULT_CCR)
         self.assertEqual(encode_joint_command(Joint.SHOULDER, 0), bytes((0x04, 0x1F, 0x40)))
 
     def test_straight_elbow(self):
-        # joint 2, CCR 1600 = 0x0640
-        self.assertEqual(encode_joint_command(2, 180), bytes((0x02, 0x06, 0x40)))
+        # joint 2, CCR 20800 = 0x5140
+        self.assertEqual(encode_joint_command(2, 180), bytes((0x02, 0x51, 0x40)))
 
     def test_rejects_unknown_joint(self):
         with self.assertRaises(ValueError):
@@ -91,14 +96,14 @@ class ArmUartTests(unittest.TestCase):
                 b"Joint ID is '4' (SHOULDER)\n",
                 b"Setting CCR to '8000'\n",
                 b"Joint ID is '2' (ELBOW)\n",
-                b"Setting CCR to '1600'\n",
+                b"Setting CCR to '20800'\n",
             ]
         )
         link = ArmUart(serial_port=fake)
         link.send_angles({Joint.SHOULDER: 0, Joint.ELBOW: 180})
         self.assertEqual(
             fake.written,
-            bytes((0x04, 0x1F, 0x40, 0x02, 0x06, 0x40)),
+            bytes((0x04, 0x1F, 0x40, 0x02, 0x51, 0x40)),
         )
         self.assertEqual(fake.lines, [])
 
@@ -107,7 +112,7 @@ class ArmUartTests(unittest.TestCase):
         link = ArmUart(serial_port=fake)
         link.send_angle(Joint.ELBOW, 9)
         link.close()
-        self.assertEqual(fake.written, bytes((0x02, 0x1E, 0x00)))
+        self.assertEqual(fake.written, bytes((0x02, 0x21, 0xC0)))
         self.assertTrue(fake.closed)
 
     def test_rejects_non_positive_baud(self):
