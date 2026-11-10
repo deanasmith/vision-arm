@@ -6,7 +6,7 @@ import mediapipe as mp
 import numpy as np
 
 from arm.protocol import Joint
-from arm.uart import DEFAULT_BAUD, DEFAULT_PORT, ArmUart
+from arm.uart import DEFAULT_BAUD, ArmUart, UartSelectionError, resolve_uart_port
 
 # --- Angle Calculation Functions ---
 def calculate_3d_angle(a, b, c):
@@ -45,8 +45,12 @@ def parse_args(argv=None):
     )
     parser.add_argument(
         "--port",
-        default=DEFAULT_PORT,
-        help=f"Serial device wired to STM32 USART3 (default: {DEFAULT_PORT})",
+        default=None,
+        help=(
+            "Serial device wired to STM32 USART3. "
+            "Default: the only /dev/cu.usb* or /dev/cu.wchusbserial* adapter on macOS, "
+            "or the only /dev/ttyUSB* device on Linux (/dev/ttyUSB0 when none are listed)."
+        ),
     )
     parser.add_argument(
         "--baud",
@@ -77,6 +81,11 @@ def open_arm(port, baud):
 
 def main(argv=None) -> int:
     args = parse_args(argv)
+    try:
+        args.port = resolve_uart_port(args.port)
+    except UartSelectionError as exc:
+        print(exc, file=sys.stderr)
+        return 1
     link = open_arm(args.port, args.baud)
 
     # --- MediaPipe Setup ---

@@ -1,3 +1,5 @@
+import os
+import tempfile
 import unittest
 from typing import List
 
@@ -8,7 +10,7 @@ from arm.protocol import (
     angle_to_ccr,
     encode_joint_command,
 )
-from arm.uart import ArmUart
+from arm.uart import DEFAULT_PORT, ArmUart, UartSelectionError, resolve_uart_port
 
 
 class _FakeSerial:
@@ -111,3 +113,76 @@ class ArmUartTests(unittest.TestCase):
     def test_rejects_non_positive_baud(self):
         with self.assertRaises(ValueError):
             ArmUart(baud=0, serial_port=_FakeSerial())
+
+
+class ResolveUartPortTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+
+    def touch(self, name: str) -> str:
+        path = os.path.join(self.tmp.name, name)
+        with open(path, "w", encoding="utf-8"):
+            pass
+        return path
+
+    def test_darwin_picks_the_only_usb_callout(self):
+        chosen = self.touch("cu.usbserial-10")
+        self.touch("tty.usbserial-10")
+        self.touch("cu.Bluetooth-Incoming-Port")
+        self.assertEqual(
+            resolve_uart_port(platform="darwin", directory=self.tmp.name),
+            chosen,
+        )
+
+    def test_darwin_picks_a_wch_adapter(self):
+        chosen = self.touch("cu.wchusbserial110")
+        self.assertEqual(
+            resolve_uart_port(platform="darwin", directory=self.tmp.name),
+            chosen,
+        )
+
+    def test_darwin_lists_several_adapters(self):
+        self.touch("cu.usbserial-A")
+        self.touch("cu.wchusbserial110")
+        with self.assertRaises(UartSelectionError) as caught:
+            resolve_uart_port(platform="darwin", directory=self.tmp.name)
+        message = str(caught.exception)
+        self.assertIn("cu.usbserial-A", message)
+        self.assertIn("cu.wchusbserial110", message)
+        self.assertIn("--port", message)
+
+    def test_darwin_missing_adapter(self):
+        self.touch("cu.debug-console")
+        with self.assertRaises(UartSelectionError) as caught:
+            resolve_uart_port(platform="darwin", directory=self.tmp.name)
+        self.assertIn("No USB-UART adapter found", str(caught.exception))
+
+    def test_linux_uses_the_only_ttyusb_node(self):
+        chosen = self.touch("ttyUSB1")
+        self.assertEqual(
+            resolve_uart_port(platform="linux", directory=self.tmp.name),
+            chosen,
+        )
+
+    def test_linux_defaults_when_no_ttyusb_node_is_listed(self):
+        self.assertEqual(
+            resolve_uart_port(platform="linux", directory=self.tmp.name),
+            DEFAULT_PORT,
+        )
+
+    def test_linux_lists_several_ttyusb_nodes(self):
+        self.touch("ttyUSB0")
+        self.touch("ttyUSB1")
+        with self.assertRaises(UartSelectionError) as caught:
+            resolve_uart_port(platform="linux", directory=self.tmp.name)
+        self.assertIn("ttyUSB0", str(caught.exception))
+        self.assertIn("ttyUSB1", str(caught.exception))
+
+    def test_explicit_port_skips_discovery(self):
+        self.touch("cu.usbserial-A")
+        self.touch("cu.usbserial-B")
+        self.assertEqual(
+            resolve_uart_port("/dev/cu.custom", platform="darwin", directory=self.tmp.name),
+            "/dev/cu.custom",
+        )
