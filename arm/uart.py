@@ -20,6 +20,7 @@ from __future__ import annotations
 import glob
 import os
 import sys
+import time
 from typing import Mapping
 
 import serial
@@ -28,6 +29,9 @@ from arm.protocol import Joint, encode_joint_command
 
 DEFAULT_PORT = "/dev/ttyUSB0"
 DEFAULT_BAUD = 115200
+# Long enough for the firmware's two status lines on a USB-UART adapter,
+# short enough that a missing line cannot stall the camera.
+ACK_TIMEOUT = 0.1
 
 _DARWIN_GLOBS = ("cu.usb*", "cu.wchusbserial*")
 _LINUX_GLOBS = ("ttyUSB*",)
@@ -86,19 +90,22 @@ class ArmUart:
 
     The STM32F0 USART has a one-byte receive register, and the firmware
     transmits a status line before it calls ``HAL_UART_Receive`` again. The
-    next joint is held until that ack arrives, or until a short timeout when
-    the adapter does not wire STM32 TX back to the host.
+    next joint waits for that line, but only until ``ACK_TIMEOUT``. A missing
+    line or a failed read does not undo the write and does not close the port.
     """
 
     def __init__(
         self,
         port: str = DEFAULT_PORT,
         baud: int = DEFAULT_BAUD,
-        timeout: float = 0.02,
+        timeout: float = ACK_TIMEOUT,
         serial_port: serial.Serial | None = None,
     ) -> None:
         if baud <= 0:
             raise ValueError(f"baud must be positive, got {baud}")
+        if timeout < 0:
+            raise ValueError(f"timeout must be non-negative, got {timeout}")
+        self._ack_timeout = timeout
         if serial_port is not None:
             self._ser = serial_port
         else:
@@ -119,8 +126,14 @@ class ArmUart:
         self.baud = baud
 
     def send_angle(self, joint: Joint | int, angle_deg: float) -> None:
+        # The frame is committed before any ack read. A missing "Setting CCR"
+        # line, or a read error while waiting for it, must not discard this
+        # write or the next joint.
         self._ser.write(encode_joint_command(joint, angle_deg))
-        self._ser.flush()
+        try:
+            self._ser.flush()
+        except OSError:
+            pass
         self._drain_ack()
 
     def send_angles(self, angles: Mapping[Joint | int, float]) -> None:
@@ -133,9 +146,32 @@ class ArmUart:
         self._ser.close()
 
     def _drain_ack(self) -> None:
-        for _ in range(3):
-            line = self._ser.readline()
+        """Wait out the firmware's status text, then return either way.
+
+        ``set_servo_from_uart`` prints ``Setting CCR`` and only then calls
+        ``HAL_UART_Receive`` again. The read is best-effort: the line is not
+        required for the command already written, and a serial error here is
+        not a failed write.
+        """
+        deadline = time.monotonic() + self._ack_timeout
+        while time.monotonic() < deadline:
+            started = time.monotonic()
+            try:
+                line = self._ser.readline()
+            except OSError:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    return
+                time.sleep(min(0.01, remaining))
+                continue
+            if line and any(marker in line for marker in _ACK_MARKERS):
+                return
+            now = time.monotonic()
+            if now >= deadline:
+                return
+            # An empty read that already blocked used up the port timeout.
+            # An instant empty read has not actually waited.
+            if not line and (now - started) >= 0.01:
+                return
             if not line:
-                return
-            if any(marker in line for marker in _ACK_MARKERS):
-                return
+                time.sleep(min(0.01, deadline - now))

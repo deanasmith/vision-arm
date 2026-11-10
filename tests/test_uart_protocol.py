@@ -3,6 +3,8 @@ import tempfile
 import unittest
 from typing import List
 
+import serial
+
 from arm.protocol import (
     SERVO_FULL_CCR,
     SERVO_ZERO_CCR,
@@ -109,11 +111,30 @@ class ArmUartTests(unittest.TestCase):
 
     def test_stops_when_adapter_does_not_reply(self):
         fake = _FakeSerial()
-        link = ArmUart(serial_port=fake)
+        link = ArmUart(serial_port=fake, timeout=0.02)
         link.send_angle(Joint.ELBOW, 9)
         link.close()
         self.assertEqual(fake.written, bytes((0x02, 0x21, 0xC0)))
         self.assertTrue(fake.closed)
+
+    def test_ack_read_error_still_writes_both_joints(self):
+        # A macOS serial read can raise SerialException (an OSError) when the
+        # firmware's "Setting CCR" line is not in the buffer yet. That must
+        # not cancel the frame already written or skip the other joint.
+        class _AckFails(_FakeSerial):
+            def readline(self) -> bytes:
+                raise serial.SerialException(
+                    "device reports readiness to read but returned no data "
+                    "(device disconnected or multiple access on port?)"
+                )
+
+        fake = _AckFails()
+        link = ArmUart(serial_port=fake, timeout=0.02)
+        link.send_angles({Joint.SHOULDER: 90, Joint.ELBOW: 180})
+        self.assertEqual(
+            fake.written,
+            bytes((0x04, 0x38, 0x40, 0x02, 0x51, 0x40)),
+        )
 
     def test_rejects_non_positive_baud(self):
         with self.assertRaises(ValueError):
