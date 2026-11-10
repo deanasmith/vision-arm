@@ -12,7 +12,15 @@ The project has several components that need to be running:
 `<args>` should be any of the following:
 - `calibrate`: Calibrate the cameras with the charuco board
 - `track`: Start tracking with multiple cameras
-- `mono`: Start with a single camera (mostly for debugging)
+- `mono`: Start with a single camera (mostly for debugging). The left shoulder and elbow angles are sent to the STM32 over UART.
+
+`uv run python main.py mono` opens `/dev/ttyUSB0` at 115200 8N1. Pass `--port` when the adapter is somewhere else:
+
+```
+uv run python main.py mono --port /dev/ttyUSB0
+```
+
+Shoulder is joint id 4 and elbow is joint id 2. If the port cannot be opened, the camera loop still runs and UART stays off.
 
 ### STM32
 The following STM32 toolchain setup is for Linux systems. A Linux system is recommended, but MacOS or Windows systems should work with some tinkering. (WSL is useful for Windows systems.)

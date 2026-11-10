@@ -1,6 +1,12 @@
+import argparse
+import sys
+
 import cv2
 import mediapipe as mp
 import numpy as np
+
+from arm.protocol import Joint
+from arm.uart import DEFAULT_BAUD, DEFAULT_PORT, ArmUart
 
 # --- Angle Calculation Functions ---
 def calculate_3d_angle(a, b, c):
@@ -32,95 +38,163 @@ def calculate_shoulder_flexion(shoulder, elbow):
     angle = np.arccos(np.clip(cosine_angle, -1.0, 1.0))
     return np.degrees(angle)
 
-# --- MediaPipe Setup ---
-mp_holistic = mp.solutions.holistic
-holistic = mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5)
-mp_draw = mp.solutions.drawing_utils
 
-UPPER_ARM_CONNECTIONS = [(11, 12), (11, 13), (12, 14)]
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser(
+        description="Single-camera pose demo. Sends the left shoulder and elbow angles to the STM32 over UART.",
+    )
+    parser.add_argument(
+        "--port",
+        default=DEFAULT_PORT,
+        help=f"Serial device wired to STM32 USART3 (default: {DEFAULT_PORT})",
+    )
+    parser.add_argument(
+        "--baud",
+        type=int,
+        default=DEFAULT_BAUD,
+        help=f"UART baud rate, 8N1 (default: {DEFAULT_BAUD}, matching the firmware)",
+    )
+    return parser.parse_args(argv)
 
-cap = cv2.VideoCapture(0)
 
-while cap.isOpened():
-    success, frame = cap.read()
-    if not success: break
-    
-    h, w, _ = frame.shape 
-    results = holistic.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+def open_arm(port, baud):
+    try:
+        link = ArmUart(port, baud)
+    except (OSError, ValueError) as exc:
+        print(
+            f"UART disabled: could not open {port} ({exc}). "
+            "Pass --port to select the adapter. The camera loop will keep running.",
+            file=sys.stderr,
+        )
+        return None
+    print(
+        f"UART {port} @ {baud} 8N1 — sending left shoulder (id {int(Joint.SHOULDER)}) "
+        f"and left elbow (id {int(Joint.ELBOW)})",
+        file=sys.stderr,
+    )
+    return link
 
-    if results.pose_landmarks:
-        pose_lms = results.pose_landmarks.landmark
-        
-        # --- 1. Draw Skeleton (Shoulders & Upper Arms) ---
-        for connection in UPPER_ARM_CONNECTIONS:
-            pt1, pt2 = pose_lms[connection[0]], pose_lms[connection[1]]
-            if pt1.visibility > 0.5 and pt2.visibility > 0.5:
-                x1, y1 = int(pt1.x * w), int(pt1.y * h)
-                x2, y2 = int(pt2.x * w), int(pt2.y * h)
-                cv2.line(frame, (x1, y1), (x2, y2), (0, 255, 0), 3)
-                cv2.circle(frame, (x1, y1), 5, (0, 0, 255), cv2.FILLED)
-                cv2.circle(frame, (x2, y2), 5, (0, 0, 255), cv2.FILLED)
 
-        # --- 2. Left Arm Logic (Forearm & Math) ---
-        if pose_lms[11].visibility > 0.5 and pose_lms[13].visibility > 0.5:
-            elbow_x, elbow_y = int(pose_lms[13].x * w), int(pose_lms[13].y * h)
-            
-            # 1. ALWAYS calculate the Shoulder Angle (only needs Shoulder + Elbow)
-            shoulder_3d = [pose_lms[11].x, pose_lms[11].y, pose_lms[11].z]
-            elbow_3d = [pose_lms[13].x, pose_lms[13].y, pose_lms[13].z]
-            shoulder_angle = calculate_shoulder_flexion(shoulder_3d, elbow_3d)
-            
-            shoulder_px = (int(pose_lms[11].x * w), int(pose_lms[11].y * h))
-            cv2.putText(frame, f"Shoulder: {int(shoulder_angle)}", (shoulder_px[0] + 15, shoulder_px[1] - 15), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
-            
-            # Determine Wrist Position
+def main(argv=None) -> int:
+    args = parse_args(argv)
+    link = open_arm(args.port, args.baud)
+
+    # --- MediaPipe Setup ---
+    mp_holistic = mp.solutions.holistic
+    holistic = mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5)
+    mp_draw = mp.solutions.drawing_utils
+
+    UPPER_ARM_CONNECTIONS = [(11, 12), (11, 13), (12, 14)]
+
+    cap = cv2.VideoCapture(0)
+    try:
+        while cap.isOpened():
+            success, frame = cap.read()
+            if not success: break
+
+            h, w, _ = frame.shape
+            results = holistic.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+
+            shoulder_angle = None
+            elbow_angle = None
+
+            if results.pose_landmarks:
+                pose_lms = results.pose_landmarks.landmark
+
+                # --- 1. Draw Skeleton (Shoulders & Upper Arms) ---
+                for connection in UPPER_ARM_CONNECTIONS:
+                    pt1, pt2 = pose_lms[connection[0]], pose_lms[connection[1]]
+                    if pt1.visibility > 0.5 and pt2.visibility > 0.5:
+                        x1, y1 = int(pt1.x * w), int(pt1.y * h)
+                        x2, y2 = int(pt2.x * w), int(pt2.y * h)
+                        cv2.line(frame, (x1, y1), (x2, y2), (0, 255, 0), 3)
+                        cv2.circle(frame, (x1, y1), 5, (0, 0, 255), cv2.FILLED)
+                        cv2.circle(frame, (x2, y2), 5, (0, 0, 255), cv2.FILLED)
+
+                # --- 2. Left Arm Logic (Forearm & Math) ---
+                if pose_lms[11].visibility > 0.5 and pose_lms[13].visibility > 0.5:
+                    elbow_x, elbow_y = int(pose_lms[13].x * w), int(pose_lms[13].y * h)
+
+                    # 1. ALWAYS calculate the Shoulder Angle (only needs Shoulder + Elbow)
+                    shoulder_3d = [pose_lms[11].x, pose_lms[11].y, pose_lms[11].z]
+                    elbow_3d = [pose_lms[13].x, pose_lms[13].y, pose_lms[13].z]
+                    shoulder_angle = calculate_shoulder_flexion(shoulder_3d, elbow_3d)
+
+                    shoulder_px = (int(pose_lms[11].x * w), int(pose_lms[11].y * h))
+                    cv2.putText(frame, f"Shoulder: {int(shoulder_angle)}", (shoulder_px[0] + 15, shoulder_px[1] - 15),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+
+                    # Determine Wrist Position
+                    if results.left_hand_landmarks:
+                        wrist_x = int(results.left_hand_landmarks.landmark[0].x * w)
+                        wrist_y = int(results.left_hand_landmarks.landmark[0].y * h)
+                        wrist_z = pose_lms[15].z
+                    elif pose_lms[15].visibility > 0.5:
+                        wrist_x = int(pose_lms[15].x * w)
+                        wrist_y = int(pose_lms[15].y * h)
+                        wrist_z = pose_lms[15].z
+                    else:
+                        wrist_x, wrist_y, wrist_z = None, None, None
+
+                    # 2. Only calculate the Elbow Angle if the Wrist is visible
+                    if wrist_x is not None:
+                        cv2.line(frame, (elbow_x, elbow_y), (wrist_x, wrist_y), (0, 255, 0), 3)
+                        cv2.circle(frame, (wrist_x, wrist_y), 5, (0, 0, 255), cv2.FILLED)
+
+                        wrist_3d = [pose_lms[15].x, pose_lms[15].y, wrist_z]
+                        elbow_angle = calculate_3d_angle(shoulder_3d, elbow_3d, wrist_3d)
+
+                        cv2.putText(frame, f"Elbow: {int(elbow_angle)}", (elbow_x + 15, elbow_y),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+
+                # --- 3. Right Arm Logic (Forearm Only) ---
+                if pose_lms[14].visibility > 0.5:
+                    elbow_x, elbow_y = int(pose_lms[14].x * w), int(pose_lms[14].y * h)
+                    if results.right_hand_landmarks:
+                        wrist_x = int(results.right_hand_landmarks.landmark[0].x * w)
+                        wrist_y = int(results.right_hand_landmarks.landmark[0].y * h)
+                    elif pose_lms[16].visibility > 0.5:
+                        wrist_x = int(pose_lms[16].x * w)
+                        wrist_y = int(pose_lms[16].y * h)
+                    else:
+                        wrist_x, wrist_y = None, None
+
+                    if wrist_x is not None:
+                        cv2.line(frame, (elbow_x, elbow_y), (wrist_x, wrist_y), (0, 255, 0), 3)
+                        cv2.circle(frame, (wrist_x, wrist_y), 5, (0, 0, 255), cv2.FILLED)
+
+            # --- 4. Draw Hands ---
             if results.left_hand_landmarks:
-                wrist_x = int(results.left_hand_landmarks.landmark[0].x * w)
-                wrist_y = int(results.left_hand_landmarks.landmark[0].y * h)
-                wrist_z = pose_lms[15].z 
-            elif pose_lms[15].visibility > 0.5:
-                wrist_x = int(pose_lms[15].x * w)
-                wrist_y = int(pose_lms[15].y * h)
-                wrist_z = pose_lms[15].z
-            else:
-                wrist_x, wrist_y, wrist_z = None, None, None
-
-            # 2. Only calculate the Elbow Angle if the Wrist is visible
-            if wrist_x is not None:
-                cv2.line(frame, (elbow_x, elbow_y), (wrist_x, wrist_y), (0, 255, 0), 3)
-                cv2.circle(frame, (wrist_x, wrist_y), 5, (0, 0, 255), cv2.FILLED)
-                
-                wrist_3d = [pose_lms[15].x, pose_lms[15].y, wrist_z] 
-                elbow_angle = calculate_3d_angle(shoulder_3d, elbow_3d, wrist_3d)
-
-                cv2.putText(frame, f"Elbow: {int(elbow_angle)}", (elbow_x + 15, elbow_y), 
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
-
-        # --- 3. Right Arm Logic (Forearm Only) ---
-        if pose_lms[14].visibility > 0.5:
-            elbow_x, elbow_y = int(pose_lms[14].x * w), int(pose_lms[14].y * h)
+                mp_draw.draw_landmarks(frame, results.left_hand_landmarks, mp_holistic.HAND_CONNECTIONS)
             if results.right_hand_landmarks:
-                wrist_x = int(results.right_hand_landmarks.landmark[0].x * w)
-                wrist_y = int(results.right_hand_landmarks.landmark[0].y * h)
-            elif pose_lms[16].visibility > 0.5:
-                wrist_x = int(pose_lms[16].x * w)
-                wrist_y = int(pose_lms[16].y * h)
-            else:
-                wrist_x, wrist_y = None, None
+                mp_draw.draw_landmarks(frame, results.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS)
 
-            if wrist_x is not None:
-                cv2.line(frame, (elbow_x, elbow_y), (wrist_x, wrist_y), (0, 255, 0), 3)
-                cv2.circle(frame, (wrist_x, wrist_y), 5, (0, 0, 255), cv2.FILLED)
+            if link is not None and (shoulder_angle is not None or elbow_angle is not None):
+                payload = {}
+                if shoulder_angle is not None:
+                    payload[Joint.SHOULDER] = float(shoulder_angle)
+                if elbow_angle is not None:
+                    payload[Joint.ELBOW] = float(elbow_angle)
+                try:
+                    link.send_angles(payload)
+                except OSError as exc:
+                    print(f"UART write failed ({exc}). Disabling UART.", file=sys.stderr)
+                    link.close()
+                    link = None
 
-    # --- 4. Draw Hands ---
-    if results.left_hand_landmarks:
-        mp_draw.draw_landmarks(frame, results.left_hand_landmarks, mp_holistic.HAND_CONNECTIONS)
-    if results.right_hand_landmarks:
-        mp_draw.draw_landmarks(frame, results.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS)
+            uart_label = "UART off" if link is None else f"UART {args.port}"
+            cv2.putText(frame, uart_label, (10, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
-    cv2.imshow('Kinematic Arm Tracking', frame)
-    if cv2.waitKey(5) & 0xFF == 27: break
+            cv2.imshow('Kinematic Arm Tracking', frame)
+            if cv2.waitKey(5) & 0xFF == 27: break
+    finally:
+        cap.release()
+        cv2.destroyAllWindows()
+        holistic.close()
+        if link is not None:
+            link.close()
+    return 0
 
-cap.release()
-cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    raise SystemExit(main())
