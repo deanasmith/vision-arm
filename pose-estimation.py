@@ -21,22 +21,17 @@ def calculate_3d_angle(a, b, c):
     angle = np.arccos(np.clip(cosine_angle, -1.0, 1.0))
     return np.degrees(angle)
 
-def calculate_shoulder_flexion(shoulder, elbow):
-    """Calculates front raise angle ignoring the X axis, using a static 'down' vector."""
-    # Isolate Y (up/down) and Z (depth)
-    sh = np.array([shoulder[1], shoulder[2]]) 
-    el = np.array([elbow[1], elbow[2]])
-    
-    # Vector of the upper arm
-    v_arm = el - sh
-    # Static vector pointing straight down in Y-Z plane
-    v_down = np.array([1.0, 0.0]) 
-    
-    if np.linalg.norm(v_arm) == 0: return 0
-    
-    cosine_angle = np.dot(v_arm, v_down) / (np.linalg.norm(v_arm) * np.linalg.norm(v_down))
-    angle = np.arccos(np.clip(cosine_angle, -1.0, 1.0))
-    return np.degrees(angle)
+def calculate_shoulder_angle(shoulder_xy, elbow_xy):
+    """Degrees the upper arm is lifted from straight down, in the image.
+
+    0 is hanging down, 90 is level with the shoulder, 180 is overhead.
+    Uses the same pixel positions as the drawn upper-arm line.
+    """
+    dx = float(elbow_xy[0] - shoulder_xy[0])
+    dy = float(elbow_xy[1] - shoulder_xy[1])
+    if dx == 0.0 and dy == 0.0:
+        return 0.0
+    return abs(float(np.degrees(np.arctan2(dx, dy))))
 
 
 def parse_args(argv=None):
@@ -124,12 +119,14 @@ def main(argv=None) -> int:
                 if pose_lms[11].visibility > 0.5 and pose_lms[13].visibility > 0.5:
                     elbow_x, elbow_y = int(pose_lms[13].x * w), int(pose_lms[13].y * h)
 
-                    # 1. ALWAYS calculate the Shoulder Angle (only needs Shoulder + Elbow)
+                    # Shoulder angle is the lift of the drawn upper-arm line from straight down.
+                    shoulder_px = (pose_lms[11].x * w, pose_lms[11].y * h)
+                    elbow_px = (pose_lms[13].x * w, pose_lms[13].y * h)
                     shoulder_3d = [pose_lms[11].x, pose_lms[11].y, pose_lms[11].z]
                     elbow_3d = [pose_lms[13].x, pose_lms[13].y, pose_lms[13].z]
-                    shoulder_angle = calculate_shoulder_flexion(shoulder_3d, elbow_3d)
+                    shoulder_angle = calculate_shoulder_angle(shoulder_px, elbow_px)
 
-                    shoulder_px = (int(pose_lms[11].x * w), int(pose_lms[11].y * h))
+                    shoulder_px = (int(shoulder_px[0]), int(shoulder_px[1]))
                     cv2.putText(frame, f"Shoulder: {int(shoulder_angle)}", (shoulder_px[0] + 15, shoulder_px[1] - 15),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
