@@ -213,12 +213,12 @@ static void test_servos(uint16_t *ccr)
   else
     test_ccr = *ccr;
 
-  set_duty_cycle(&tim1_handle, SERVO_MAX_CCR, TIM_CHANNEL_1);
+  set_duty_cycle(&tim1_handle, test_ccr, TIM_CHANNEL_1);
 
-  set_duty_cycle(&tim3_handle, SERVO_MAX_CCR, TIM_CHANNEL_1);
-  set_duty_cycle(&tim3_handle, SERVO_MAX_CCR, TIM_CHANNEL_2);
-  set_duty_cycle(&tim3_handle, SERVO_MAX_CCR, TIM_CHANNEL_3);
-  set_duty_cycle(&tim3_handle, SERVO_MAX_CCR, TIM_CHANNEL_4);
+  set_duty_cycle(&tim3_handle, test_ccr, TIM_CHANNEL_1);
+  set_duty_cycle(&tim3_handle, test_ccr, TIM_CHANNEL_2);
+  set_duty_cycle(&tim3_handle, test_ccr, TIM_CHANNEL_3);
+  set_duty_cycle(&tim3_handle, test_ccr, TIM_CHANNEL_4);
 }
 
 
