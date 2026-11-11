@@ -165,6 +165,62 @@ def solve_stereo(
     )
 
 
+def fundamental_matrix(calib: StereoCalibration) -> np.ndarray:
+    """Pixel fundamental matrix on undistorted coordinates, x2^T F x1 = 0."""
+    translation = np.asarray(calib.T, dtype=np.float64).reshape(3)
+    tx = np.array(
+        [
+            [0.0, -translation[2], translation[1]],
+            [translation[2], 0.0, -translation[0]],
+            [-translation[1], translation[0], 0.0],
+        ],
+        dtype=np.float64,
+    )
+    essential = tx @ np.asarray(calib.R, dtype=np.float64)
+    return np.linalg.inv(calib.K2).T @ essential @ np.linalg.inv(calib.K1)
+
+
+def sampson_distances(calib: StereoCalibration, pts1: np.ndarray, pts2: np.ndarray) -> np.ndarray:
+    """Symmetric epipolar error in undistorted pixels.
+
+    A mismatch perpendicular to the epipolar line is large here. A pure
+    disparity error runs along that line, so the rays still meet and this
+    distance stays near zero while the depth is wrong.
+    """
+    pts1 = np.asarray(pts1, dtype=np.float64).reshape(-1, 2)
+    pts2 = np.asarray(pts2, dtype=np.float64).reshape(-1, 2)
+    if len(pts1) == 0:
+        return np.zeros(0, dtype=np.float64)
+    und1 = cv2.undistortPoints(pts1.reshape(-1, 1, 2), calib.K1, calib.D1, P=calib.K1).reshape(-1, 2)
+    und2 = cv2.undistortPoints(pts2.reshape(-1, 1, 2), calib.K2, calib.D2, P=calib.K2).reshape(-1, 2)
+    matrix = fundamental_matrix(calib)
+    hom1 = np.concatenate([und1, np.ones((len(und1), 1))], axis=1)
+    hom2 = np.concatenate([und2, np.ones((len(und2), 1))], axis=1)
+    line1 = hom1 @ matrix.T
+    line2 = hom2 @ matrix
+    residual = np.sum(hom2 * line1, axis=1)
+    denom = line1[:, 0] ** 2 + line1[:, 1] ** 2 + line2[:, 0] ** 2 + line2[:, 1] ** 2
+    return np.sqrt(residual**2 / np.maximum(denom, 1e-18))
+
+
+def left_ray_direction(calib: StereoCalibration, pixel: np.ndarray) -> np.ndarray:
+    """Unit direction, in camera 1, of the ray through a distorted left pixel."""
+    normalized = cv2.undistortPoints(
+        np.asarray(pixel, dtype=np.float64).reshape(1, 1, 2), calib.K1, calib.D1
+    ).reshape(2)
+    direction = np.array([float(normalized[0]), float(normalized[1]), 1.0], dtype=np.float64)
+    return direction / np.linalg.norm(direction)
+
+
+def in_front_of_both(calib: StereoCalibration, point: np.ndarray) -> bool:
+    """True when the point is in front of both cameras (positive Z)."""
+    xyz = np.asarray(point, dtype=np.float64).reshape(3)
+    if not np.all(np.isfinite(xyz)) or float(xyz[2]) <= 0.0:
+        return False
+    in_right = calib.R @ xyz.reshape(3, 1) + calib.T.reshape(3, 1)
+    return float(in_right[2, 0]) > 0.0
+
+
 def triangulate_pixels(calib: StereoCalibration, pts1: np.ndarray, pts2: np.ndarray) -> np.ndarray:
     """Triangulate corresponding pixel coordinates into camera-1 XYZ (meters).
 
@@ -191,12 +247,15 @@ def triangulate_matched(
     left_xy: dict[int, tuple[float, float]],
     right_xy: dict[int, tuple[float, float]],
     max_reproj_px: float = 15.0,
+    max_sampson_px: float = 8.0,
 ) -> dict[int, np.ndarray]:
     """Triangulate landmarks observed in both cameras. Keys are landmark indices.
 
-    Points that reproject more than max_reproj_px away in either camera are
-    dropped. A mismatched hand landmark otherwise lands meters from the body
-    and collapses the 3D view.
+    Two gates both have to pass. Reprojection catches a triangulated point that
+    misses the measured pixels. It stays near zero when the error is disparity
+    along the epipolar line, and it also stays under max_reproj_px for a modest
+    miss perpendicular to that line. The Sampson distance rejects that
+    off-epipolar miss even when the reprojection residual is only a few pixels.
     """
     ids = sorted(set(left_xy) & set(right_xy))
     if not ids:
@@ -204,12 +263,12 @@ def triangulate_matched(
     pts1 = np.array([left_xy[i] for i in ids], dtype=np.float64)
     pts2 = np.array([right_xy[i] for i in ids], dtype=np.float64)
     xyz = triangulate_pixels(calib, pts1, pts2)
+    sampson = sampson_distances(calib, pts1, pts2)
     points: dict[int, np.ndarray] = {}
-    for i, pt, p1, p2 in zip(ids, xyz, pts1, pts2):
-        if not np.all(np.isfinite(pt)):
+    for i, pt, p1, p2, epi in zip(ids, xyz, pts1, pts2, sampson):
+        if not in_front_of_both(calib, pt):
             continue
-        x2 = calib.R @ pt.reshape(3, 1) + calib.T.reshape(3, 1)
-        if pt[2] <= 0 or float(x2[2, 0]) <= 0:
+        if float(epi) > max_sampson_px:
             continue
         err1 = float(np.linalg.norm(project_points(calib, pt, 1)[0] - p1))
         err2 = float(np.linalg.norm(project_points(calib, pt, 2)[0] - p2))

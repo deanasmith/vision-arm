@@ -16,11 +16,11 @@ import numpy as np
 from stereo.calibration import annotate, hstack_frames
 from stereo.cameras import DualCameras
 from stereo.config import StereoConfig
+from stereo.correspondence import resolve_pose_correspondence
 from stereo.geometry import (
     StereoCalibration,
     mean_reprojection_error,
     parallel_camera_calibration,
-    triangulate_matched,
 )
 from stereo.kinematics import calculate_3d_angle, elevation_from_down, wrist_roll
 from stereo.overlay import (
@@ -120,6 +120,26 @@ def _hand_pixels(landmarks, width: int, height: int, base: int) -> dict[int, tup
     return {base + i: (lm.x * width, lm.y * height) for i, lm in enumerate(landmarks.landmark)}
 
 
+def _pose_body_prior(results):
+    """World-landmark positions (metres) and image-relative z for one camera.
+
+    Image z is the pose landmark z MediaPipe already computed: smaller means
+    closer to the camera. It is a depth cue, not a metric Z.
+    """
+    world = {}
+    image_z = {}
+    world_landmarks = getattr(results, "pose_world_landmarks", None)
+    if world_landmarks is not None:
+        world = {
+            i: np.array([lm.x, lm.y, lm.z], dtype=np.float64)
+            for i, lm in enumerate(world_landmarks.landmark)
+        }
+    pose = getattr(results, "pose_landmarks", None)
+    if pose is not None:
+        image_z = {i: float(lm.z) for i, lm in enumerate(pose.landmark)}
+    return world, image_z
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Stereo triangulated pose tracking")
     StereoConfig.add_args(parser)
@@ -171,7 +191,19 @@ def main(argv: list[str] | None = None) -> int:
 
                 left_xy, left_draw, left_results = extract_pose_pixels(left_holistic, frame_l, config.visibility)
                 right_xy, right_draw, right_results = extract_pose_pixels(right_holistic, frame_r, config.visibility)
-                points_3d = triangulate_matched(calib, left_xy, right_xy)
+                left_world, left_z = _pose_body_prior(left_results)
+                right_world, right_z = _pose_body_prior(right_results)
+                resolved = resolve_pose_correspondence(
+                    calib,
+                    left_xy,
+                    right_xy,
+                    left_world=left_world,
+                    right_world=right_world,
+                    left_image_z=left_z,
+                    right_image_z=right_z,
+                )
+                points_3d = resolved.points
+                matched_right = resolved.right_xy
 
                 vis_l = draw_pose_overlay(frame_l, left_draw, points_3d)
                 vis_r = draw_pose_overlay(frame_r, right_draw, points_3d)
@@ -184,10 +216,10 @@ def main(argv: list[str] | None = None) -> int:
                 if right_results.right_hand_landmarks:
                     mp_draw.draw_landmarks(vis_r, right_results.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS)
 
-                ids = sorted(set(left_xy) & set(right_xy) & set(points_3d))
+                ids = sorted(set(left_xy) & set(matched_right) & set(points_3d))
                 if ids:
                     pts1 = np.array([left_xy[i] for i in ids])
-                    pts2 = np.array([right_xy[i] for i in ids])
+                    pts2 = np.array([matched_right[i] for i in ids])
                     xyz = np.stack([points_3d[i] for i in ids])
                     reproj = mean_reprojection_error(calib, xyz, pts1, pts2)
                     reproj_txt = f"{reproj:.2f}px"
