@@ -118,9 +118,11 @@ def solve_stereo(
     image_points_right: list[np.ndarray],
     image_size1: tuple[int, int],
     image_size2: tuple[int, int],
-    baseline_m: float,
 ) -> StereoCalibration:
-    """Estimate intrinsics and stereo extrinsics from paired Charuco observations."""
+    """Estimate intrinsics and stereo extrinsics from paired Charuco observations.
+
+    The metric scale is the baseline implied by the board, ||T|| from stereoCalibrate.
+    """
     if len(object_points) < 3:
         raise ValueError("Need at least 3 stereo Charuco captures to calibrate")
 
@@ -144,7 +146,10 @@ def solve_stereo(
         flags=cv2.CALIB_FIX_INTRINSIC,
         criteria=criteria,
     )
-    T, measured = scale_translation_to_baseline(T, baseline_m)
+    T = np.asarray(T, dtype=np.float64).reshape(3, 1)
+    measured = float(np.linalg.norm(T))
+    if measured < 1e-9:
+        raise ValueError("Stereo translation is degenerate (zero length)")
     return StereoCalibration(
         K1=K1,
         D1=D1,
@@ -154,7 +159,7 @@ def solve_stereo(
         T=T,
         image_size1=image_size1,
         image_size2=image_size2,
-        baseline_m=baseline_m,
+        baseline_m=measured,
         measured_baseline_m=measured,
         rms=float(stereo_rms),
     )
@@ -185,8 +190,14 @@ def triangulate_matched(
     calib: StereoCalibration,
     left_xy: dict[int, tuple[float, float]],
     right_xy: dict[int, tuple[float, float]],
+    max_reproj_px: float = 15.0,
 ) -> dict[int, np.ndarray]:
-    """Triangulate landmarks observed in both cameras. Keys are landmark indices."""
+    """Triangulate landmarks observed in both cameras. Keys are landmark indices.
+
+    Points that reproject more than max_reproj_px away in either camera are
+    dropped. A mismatched hand landmark otherwise lands meters from the body
+    and collapses the 3D view.
+    """
     ids = sorted(set(left_xy) & set(right_xy))
     if not ids:
         return {}
@@ -194,11 +205,15 @@ def triangulate_matched(
     pts2 = np.array([right_xy[i] for i in ids], dtype=np.float64)
     xyz = triangulate_pixels(calib, pts1, pts2)
     points: dict[int, np.ndarray] = {}
-    for i, pt in zip(ids, xyz):
+    for i, pt, p1, p2 in zip(ids, xyz, pts1, pts2):
         if not np.all(np.isfinite(pt)):
             continue
         x2 = calib.R @ pt.reshape(3, 1) + calib.T.reshape(3, 1)
         if pt[2] <= 0 or float(x2[2, 0]) <= 0:
+            continue
+        err1 = float(np.linalg.norm(project_points(calib, pt, 1)[0] - p1))
+        err2 = float(np.linalg.norm(project_points(calib, pt, 2)[0] - p2))
+        if max(err1, err2) > max_reproj_px:
             continue
         points[i] = pt
     return points

@@ -45,7 +45,7 @@ class CalibrationTests(unittest.TestCase):
         T_true = np.array([-config.baseline_m, 0.0, 0.0])
         object_points, img_l, img_r = _board_views(obj, K, D, T_true)
 
-        calib = solve_stereo(object_points, img_l, img_r, (640, 480), (640, 480), config.baseline_m)
+        calib = solve_stereo(object_points, img_l, img_r, (640, 480), (640, 480))
 
         self.assertLess(calib.rms, 0.05)
         self.assertAlmostEqual(float(np.linalg.norm(calib.T)), config.baseline_m, places=3)
@@ -66,7 +66,7 @@ class CalibrationTests(unittest.TestCase):
         obj = CharucoHelper(config).board.getChessboardCorners().astype(np.float64)
         K = np.array([[700.0, 0.0, 320.0], [0.0, 700.0, 240.0], [0.0, 0.0, 1.0]])
         object_points, img_l, img_r = _board_views(obj, K, np.zeros(5), np.array([-0.12, 0.0, 0.0]))
-        calib = solve_stereo(object_points, img_l, img_r, (640, 480), (640, 480), 0.12)
+        calib = solve_stereo(object_points, img_l, img_r, (640, 480), (640, 480))
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "stereo.npz"
             calib.save(path)
@@ -74,7 +74,7 @@ class CalibrationTests(unittest.TestCase):
         np.testing.assert_allclose(loaded.K1, calib.K1)
         np.testing.assert_allclose(loaded.T, calib.T)
         self.assertEqual(loaded.image_size1, (640, 480))
-        self.assertAlmostEqual(loaded.baseline_m, 0.12)
+        self.assertAlmostEqual(loaded.baseline_m, 0.12, places=3)
 
 
 if __name__ == "__main__":

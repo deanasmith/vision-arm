@@ -76,12 +76,11 @@ def capture_calibration(config: StereoConfig) -> int:
                     last_status = f"Need at least {config.min_stereo_pairs} pairs (have {len(buffer)})"
                     continue
                 try:
-                    calib = buffer.solve(config.baseline_m)
+                    calib = buffer.solve()
                     calib.save(config.calibration_path)
                     last_status = (
                         f"Saved {config.calibration_path}  RMS={calib.rms:.3f}px  "
-                        f"measured baseline={calib.measured_baseline_m:.3f}m  "
-                        f"scaled to {calib.baseline_m:.3f}m"
+                        f"baseline={calib.baseline_m:.3f}m"
                     )
                     print(last_status)
                 except Exception as exc:
