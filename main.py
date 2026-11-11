@@ -16,7 +16,14 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("generate-board", help="Write a printable Charuco board image")
     sub.add_parser("calibrate", help="Capture Charuco views and save stereo calibration")
     sub.add_parser("track", help="Run dual-camera triangulated pose tracking")
-    sub.add_parser("mono", help="Run the original single-camera pose demo")
+    sub.add_parser(
+        "stereo",
+        help="Run dual-camera triangulated pose tracking (same as track)",
+    )
+    sub.add_parser(
+        "mono",
+        help="Run the single-camera pose demo and send shoulder/elbow angles over UART",
+    )
 
     args, rest = parser.parse_known_args(argv)
     if args.command is None:
@@ -30,7 +37,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "calibrate":
         from calibrate import main as calibrate_main
         return calibrate_main(rest)
-    if args.command == "track":
+    if args.command in {"track", "stereo"}:
         from stereo_pose import main as track_main
         return track_main(rest)
     if args.command == "mono":
