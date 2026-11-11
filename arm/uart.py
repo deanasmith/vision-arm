@@ -92,6 +92,13 @@ class ArmUart:
     transmits a status line before it calls ``HAL_UART_Receive`` again. The
     next joint waits for that line, but only until ``ACK_TIMEOUT``. A missing
     line or a failed read does not undo the write and does not close the port.
+
+    The wait is a deadline around ``read``. It does not call ``flush``
+    (``tcdrain``), which on macOS blocks until the tty reports the output
+    queue empty and never returns on adapters that do not report it. It
+    also does not call ``readline``: ``io.RawIOBase.readline`` issues a
+    fresh ``read(1)`` per byte, so each byte restarts the port timeout and
+    a status stream with no newline stalls the next joint write.
     """
 
     def __init__(
@@ -130,10 +137,6 @@ class ArmUart:
         # line, or a read error while waiting for it, must not discard this
         # write or the next joint.
         self._ser.write(encode_joint_command(joint, angle_deg))
-        try:
-            self._ser.flush()
-        except OSError:
-            pass
         self._drain_ack()
 
     def send_angles(self, angles: Mapping[Joint | int, float]) -> None:
@@ -154,24 +157,23 @@ class ArmUart:
         not a failed write.
         """
         deadline = time.monotonic() + self._ack_timeout
+        pending = bytearray()
         while time.monotonic() < deadline:
-            started = time.monotonic()
             try:
-                line = self._ser.readline()
+                waiting = self._bytes_waiting()
+                chunk = self._ser.read(waiting or 1)
             except OSError:
-                remaining = deadline - time.monotonic()
-                if remaining <= 0:
-                    return
-                time.sleep(min(0.01, remaining))
-                continue
-            if line and any(marker in line for marker in _ACK_MARKERS):
                 return
-            now = time.monotonic()
-            if now >= deadline:
+            if not chunk:
                 return
-            # An empty read that already blocked used up the port timeout.
-            # An instant empty read has not actually waited.
-            if not line and (now - started) >= 0.01:
+            pending += chunk
+            if any(marker in pending for marker in _ACK_MARKERS):
                 return
-            if not line:
-                time.sleep(min(0.01, deadline - now))
+            if len(pending) > 128:
+                pending = pending[-32:]
+
+    def _bytes_waiting(self) -> int:
+        try:
+            return int(self._ser.in_waiting)
+        except (AttributeError, OSError, TypeError, ValueError):
+            return 0

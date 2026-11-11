@@ -1,5 +1,7 @@
 import os
 import tempfile
+import threading
+import time
 import unittest
 from typing import List
 
@@ -19,22 +21,59 @@ class _FakeSerial:
     def __init__(self, lines: List[bytes] | None = None) -> None:
         self.written = b""
         self.lines = list(lines or [])
+        self._rx = bytearray(b"".join(self.lines))
         self.closed = False
+        self.timeout = 0.02
+        self.flush_calls = 0
 
     def write(self, data: bytes) -> int:
         self.written += bytes(data)
         return len(data)
 
     def flush(self) -> None:
-        return None
+        self.flush_calls += 1
+        raise AssertionError("flush/tcdrain must not gate the next joint write")
 
-    def readline(self) -> bytes:
-        if not self.lines:
+    @property
+    def in_waiting(self) -> int:
+        return len(self._rx)
+
+    def read(self, size: int = 1) -> bytes:
+        if size is None or size <= 0 or not self._rx:
             return b""
-        return self.lines.pop(0)
+        chunk = bytes(self._rx[:size])
+        del self._rx[:size]
+        if not self._rx:
+            self.lines.clear()
+        return chunk
 
     def close(self) -> None:
         self.closed = True
+
+
+class _EndlessNoise:
+    """RX bytes that never contain a newline or an ack marker."""
+
+    def __init__(self) -> None:
+        self.written = b""
+        self.timeout = None
+
+    def write(self, data: bytes) -> int:
+        self.written += bytes(data)
+        return len(data)
+
+    @property
+    def in_waiting(self) -> int:
+        return 8
+
+    def read(self, size: int = 1) -> bytes:
+        return b"X" * max(1, int(size))
+
+    def flush(self) -> None:
+        raise AssertionError("flush/tcdrain must not gate the next joint write")
+
+    def close(self) -> None:
+        return None
 
 
 class AngleToCcrTests(unittest.TestCase):
@@ -115,6 +154,7 @@ class ArmUartTests(unittest.TestCase):
         link.send_angle(Joint.ELBOW, 9)
         link.close()
         self.assertEqual(fake.written, bytes((0x02, 0x21, 0xC0)))
+        self.assertEqual(fake.flush_calls, 0)
         self.assertTrue(fake.closed)
 
     def test_ack_read_error_still_writes_both_joints(self):
@@ -122,7 +162,7 @@ class ArmUartTests(unittest.TestCase):
         # firmware's "Setting CCR" line is not in the buffer yet. That must
         # not cancel the frame already written or skip the other joint.
         class _AckFails(_FakeSerial):
-            def readline(self) -> bytes:
+            def read(self, size: int = 1) -> bytes:
                 raise serial.SerialException(
                     "device reports readiness to read but returned no data "
                     "(device disconnected or multiple access on port?)"
@@ -135,6 +175,86 @@ class ArmUartTests(unittest.TestCase):
             fake.written,
             bytes((0x04, 0x38, 0x40, 0x02, 0x51, 0x40)),
         )
+
+    def test_visible_shoulder_and_elbow_are_both_written(self):
+        fake = _FakeSerial()
+        link = ArmUart(serial_port=fake)
+        link.send_angles({Joint.SHOULDER: 42.0, Joint.ELBOW: 90.0})
+        self.assertEqual(fake.flush_calls, 0)
+        self.assertEqual(
+            fake.written,
+            encode_joint_command(Joint.SHOULDER, 42)
+            + encode_joint_command(Joint.ELBOW, 90),
+        )
+
+    def test_noise_without_newline_cannot_stall_the_next_joint(self):
+        port = _EndlessNoise()
+        link = ArmUart(timeout=0.05, serial_port=port)
+        done = threading.Event()
+
+        def run() -> None:
+            link.send_angles({Joint.SHOULDER: 42.0, Joint.ELBOW: 90.0})
+            done.set()
+
+        thread = threading.Thread(target=run, daemon=True)
+        started = time.monotonic()
+        thread.start()
+        self.assertTrue(done.wait(1.0), "ack wait stalled the elbow write")
+        thread.join(0.2)
+        self.assertLess(time.monotonic() - started, 0.5)
+        self.assertEqual(
+            port.written,
+            encode_joint_command(Joint.SHOULDER, 42)
+            + encode_joint_command(Joint.ELBOW, 90),
+        )
+
+    def test_pty_writes_both_joints_when_output_is_not_drained(self):
+        # macOS tcdrain blocks until the tty output queue is empty. Nothing
+        # is reading this PTY, which is the hang that dropped the elbow.
+        master, slave = os.openpty()
+        link = None
+        try:
+            link = ArmUart(os.ttyname(slave), timeout=0.02)
+            done = threading.Event()
+            errors: List[BaseException] = []
+
+            def run() -> None:
+                try:
+                    link.send_angles({Joint.SHOULDER: 42.0, Joint.ELBOW: 90.0})
+                except BaseException as exc:
+                    errors.append(exc)
+                finally:
+                    done.set()
+
+            thread = threading.Thread(target=run, daemon=True)
+            thread.start()
+            self.assertTrue(done.wait(1.0), "tcdrain stalled the joint writes")
+            thread.join(0.2)
+            self.assertEqual(errors, [])
+            import fcntl
+
+            flags = fcntl.fcntl(master, fcntl.F_GETFL)
+            fcntl.fcntl(master, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+            written = b""
+            while True:
+                try:
+                    chunk = os.read(master, 64)
+                except BlockingIOError:
+                    break
+                if not chunk:
+                    break
+                written += chunk
+            self.assertEqual(
+                written,
+                encode_joint_command(Joint.SHOULDER, 42)
+                + encode_joint_command(Joint.ELBOW, 90),
+            )
+        finally:
+            if link is not None:
+                link.close()
+            else:
+                os.close(slave)
+            os.close(master)
 
     def test_rejects_non_positive_baud(self):
         with self.assertRaises(ValueError):
