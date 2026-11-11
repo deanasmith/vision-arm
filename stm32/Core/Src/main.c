@@ -27,6 +27,7 @@
 #include "stm32f0xx_hal_uart.h"
 #include "stm32f0xx_hal_tim.h"
 #include "main.h"
+#include "power_supply.h"
 
 /* Private includes ----------------------------------------------------------*/
 
