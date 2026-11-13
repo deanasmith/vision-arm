@@ -58,6 +58,7 @@ static void USART_Init(void);
 static void TIM1_Init(void);
 static void TIM3_Init(void);
 static void configure_timers(void);
+static void PSU_Init(void);
 
 // Helper functions
 static TIM_Base_InitTypeDef get_timer_init_struct(void);
@@ -106,8 +107,16 @@ int main(void)
   // calculate duty cycle CCR values instead for faster processing
   char tx_buffer[100];
   uint8_t rx_buffer[100];
+
+  // FIXME: These should be global so they're not scoped to some random function
   char *err_message = NULL;
   int err = 0;
+
+  // Wait at least 5 seconds for the power supply to be plugged in
+  HAL_Delay(5000);
+  PSU_Init();
+
+  HAL_UART_Transmit(&uart3_handle, (uint8_t *)"Entering main loop\n", strlen("Entering main loop\n"), UART_DEFAULT_TIMEOUT);
 
   // while(1) {
   //   test_servos(NULL);
@@ -237,6 +246,7 @@ static void GPIO_Init(void)
   USART3_GPIO_Init();
   TIM1_GPIO_Init();
   TIM3_GPIO_Init();
+  PSU_GPIO_Init();
 }
 
 
@@ -457,6 +467,32 @@ static void set_duty_cycle(TIM_HandleTypeDef *htim,
   timer_config.OCPolarity = TIM_OCPOLARITY_HIGH;
 
   HAL_TIM_PWM_ConfigChannel(htim, &timer_config, channel);
+}
+
+
+/**
+ * @brief Initialize power supply
+ * @param None
+ * @retval None
+ */
+static void PSU_Init(void)
+{
+  char *message = "Switching on PSU\n";
+  HAL_UART_Transmit(&uart3_handle, (uint8_t *)message, strlen(message), UART_DEFAULT_TIMEOUT);
+
+  PSU_SwitchOn();
+
+  message = "Waiting for PSU to stabilize\n";
+
+  // Wait for the power supply stablize
+  while (!PSU_isStable) {
+    HAL_Delay(100);
+    HAL_UART_Transmit(&uart3_handle, (uint8_t *)message, strlen(message), UART_DEFAULT_TIMEOUT);
+    PSU_CheckPowerGood();
+  }
+
+  message = "PSU is stable\n";
+  HAL_UART_Transmit(&uart3_handle, (uint8_t *)message, strlen(message), UART_DEFAULT_TIMEOUT);
 }
 
 
