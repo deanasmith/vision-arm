@@ -9,9 +9,15 @@
 #define __POWER_SUPPLY_H
 
 #include <stdbool.h>
-#include "stm32f0xx_hal.h"
+
+extern bool PSU_isStable;	// If the power supply is stable
+extern bool PSU_isOn;		// If the power supply is switched on
 
 void PSU_GPIO_Init(void);
+void PSU_SwitchOn(void);
+void PSU_SwitchOff(void);
+void PSU_TogglePower(void);
+bool PSU_CheckPowerGood(void);
 
 #define PSU_DC_OK_GPIO_Port GPIOC
 #define PSU_DC_OK_Pin GPIO_PIN_10
