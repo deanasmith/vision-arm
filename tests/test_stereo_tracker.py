@@ -324,6 +324,18 @@ class StereoTrackerTests(unittest.TestCase):
         self.assertGreater(angles[Joint.WRIST], 150.0)
         self.assertGreater(angles[Joint.HAND], 60.0)
 
+        # Straight arm -> elbow flexion UART angle should be 0 deg (not 180 deg).
+        pts_straight = dict(pts_rig)
+        pts_straight[RIGHT_WRIST] = np.array([-0.18, -0.10, 0.95])
+        pts_cam1_s = {idx: self.rig.to_cam1(p) for idx, p in pts_straight.items()}
+        frame_s = StereoPoseTracker(self.calib).process(
+            _project_obs(self.calib, pts_cam1_s, 1),
+            _project_obs(self.calib, pts_cam1_s, 2),
+            timestamp=0.0,
+            use_filter=False,
+        )
+        self.assertAlmostEqual(frame_s.right_arm.to_uart_angles()[Joint.ELBOW], 0.0, delta=2.0)
+
 
 if __name__ == "__main__":
     unittest.main()

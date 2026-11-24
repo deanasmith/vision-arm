@@ -455,8 +455,8 @@ def render_3d_viewport(
         parts.append(f"Hip {active_arm.hip_yaw_deg:.0f}")
     if active_arm.elevation_deg is not None:
         parts.append(f"Sh {active_arm.elevation_deg:.0f}")
-    if active_arm.elbow_interior_deg is not None:
-        parts.append(f"El {active_arm.elbow_interior_deg:.0f}")
+    if active_arm.elbow_flexion_deg is not None:
+        parts.append(f"El {active_arm.elbow_flexion_deg:.0f}")
     if active_arm.wrist_angle_deg is not None:
         parts.append(f"Wr {active_arm.wrist_angle_deg:.0f}")
     if active_arm.hand_open_deg is not None:

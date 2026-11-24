@@ -140,7 +140,7 @@ class ArmKinematics:
         Joint conventions match ``stm32/Core/Inc/main.h`` and ``pose-estimation.py``:
         - ``HIP`` (0): horizontal arm yaw in torso frame (0° side, 90° forward, 180° across)
         - ``HAND`` (1): thumb-index openness (0° closed/pinched, 180° open)
-        - ``ELBOW`` (2): interior angle (180° straight, 90° bent, 0° folded)
+        - ``ELBOW`` (2): elbow flexion angle (0° straight, 90° bent, 180° folded)
         - ``WRIST`` (3): forearm-to-hand interior angle (180° straight, 0° bent)
         - ``SHOULDER`` (4): upper-arm elevation from hanging down (0° down, 90° level, 180° up)
         """
@@ -148,7 +148,7 @@ class ArmKinematics:
         mapping = (
             (Joint.HIP, self.hip_yaw_deg),
             (Joint.HAND, self.hand_open_deg),
-            (Joint.ELBOW, self.elbow_interior_deg),
+            (Joint.ELBOW, self.elbow_flexion_deg),
             (Joint.WRIST, self.wrist_angle_deg),
             (Joint.SHOULDER, self.elevation_deg),
         )

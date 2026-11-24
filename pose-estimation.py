@@ -174,7 +174,7 @@ def main(argv=None) -> int:
                         cv2.circle(frame, (wrist_x, wrist_y), 5, (0, 0, 255), cv2.FILLED)
 
                         wrist_3d = [pose_lms[16].x, pose_lms[16].y, wrist_z]
-                        elbow_angle = calculate_3d_angle(shoulder_3d, elbow_3d, wrist_3d)
+                        elbow_angle = 180.0 - calculate_3d_angle(shoulder_3d, elbow_3d, wrist_3d)
 
                         cv2.putText(frame, f"Elbow: {int(elbow_angle)}", (elbow_x + 15, elbow_y),
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
