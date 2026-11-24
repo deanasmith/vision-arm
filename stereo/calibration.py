@@ -38,7 +38,7 @@ class CaptureBuffer:
         self.image_points_left.append(img_l)
         self.image_points_right.append(img_r)
 
-    def solve(self, baseline_m: float) -> StereoCalibration:
+    def solve(self) -> StereoCalibration:
         if self.image_size1 is None or self.image_size2 is None:
             raise ValueError("No Charuco stereo pairs captured")
         return solve_stereo(
@@ -47,7 +47,6 @@ class CaptureBuffer:
             self.image_points_right,
             self.image_size1,
             self.image_size2,
-            baseline_m,
         )
 
 

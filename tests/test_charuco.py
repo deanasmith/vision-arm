@@ -12,14 +12,14 @@ class CharucoTests(unittest.TestCase):
         self.helper = CharucoHelper(self.config)
 
     def test_generated_board_is_detected(self):
-        image = self.helper.generate_image((900, 1260))
+        image = self.helper.generate_image()
         corners, ids = self.helper.detect(image)
         self.assertIsNotNone(ids)
         inner = (self.config.squares_x - 1) * (self.config.squares_y - 1)
         self.assertGreaterEqual(len(ids), inner - 2)
 
     def test_paired_points_match_shared_ids(self):
-        image = self.helper.generate_image((900, 1260))
+        image = self.helper.generate_image()
         corners, ids = self.helper.detect(image)
         paired = paired_charuco_points(self.helper.board, corners, ids, corners, ids, min_corners=6)
         self.assertIsNotNone(paired)
@@ -29,7 +29,7 @@ class CharucoTests(unittest.TestCase):
         self.assertEqual(obj.shape[1], 3)
 
     def test_too_few_shared_corners_returns_none(self):
-        image = self.helper.generate_image((900, 1260))
+        image = self.helper.generate_image()
         corners, ids = self.helper.detect(image)
         paired = paired_charuco_points(
             self.helper.board, corners, ids, corners, ids[:2], min_corners=6

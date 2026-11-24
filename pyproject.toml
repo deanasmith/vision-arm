@@ -10,4 +10,5 @@ dependencies = [
     "opencv-contrib-python<4.10",
     "opencv-python<4.10",
     "pillow<11",
+    "pyserial>=3.5",
 ]

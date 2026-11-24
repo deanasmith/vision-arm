@@ -61,6 +61,34 @@ class TriangulationTests(unittest.TestCase):
         err = mean_reprojection_error(self.calib, self.world, pts1, pts2)
         self.assertLess(err, 1e-6)
 
+    def test_sampson_rejects_perpendicular_miss_inside_reprojection_gate(self):
+        # Parallel cameras: the epipolar line is horizontal, so a vertical
+        # shift is off the line. Twenty pixels still reprojects under the
+        # 15 px gate after triangulation splits the residual.
+        point = np.array([[0.0, 0.0, 1.5]])
+        left_px = project_points(self.calib, point, 1)[0]
+        right_px = project_points(self.calib, point, 2)[0]
+        left = {15: (float(left_px[0]), float(left_px[1]))}
+        right = {15: (float(right_px[0]), float(right_px[1]) + 20.0)}
+        self.assertNotIn(15, triangulate_matched(self.calib, left, right))
+        kept = triangulate_matched(self.calib, left, right, max_sampson_px=1e6)
+        self.assertIn(15, kept)
+        residual = max(
+            np.linalg.norm(project_points(self.calib, kept[15], 1)[0] - np.array(left[15])),
+            np.linalg.norm(project_points(self.calib, kept[15], 2)[0] - np.array(right[15])),
+        )
+        self.assertLess(residual, 15.0)
+
+    def test_disparity_along_epipolar_line_stays_accepted(self):
+        point = np.array([[0.0, 0.05, 1.5]])
+        left_px = project_points(self.calib, point, 1)[0]
+        right_px = project_points(self.calib, point, 2)[0]
+        left = {15: (float(left_px[0]), float(left_px[1]))}
+        right = {15: (float(right_px[0]) + 25.0, float(right_px[1]))}
+        out = triangulate_matched(self.calib, left, right)
+        self.assertIn(15, out)
+        self.assertGreater(abs(float(out[15][2]) - 1.5), 0.02)
+
 
 if __name__ == "__main__":
     unittest.main()

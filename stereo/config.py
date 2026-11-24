@@ -10,16 +10,17 @@ class StereoConfig:
 
     Distances are meters. The baseline is the physical distance between camera
     optical centers and is used to scale reconstruction into metric units.
-    Default board (5x7 squares of 3 cm) fits on A4 / US Letter at 100% print.
+    Default board is the AndyMark ChArUco target: DICT_4X4_250, 15x11 squares,
+    15 mm checkers, 11 mm markers.
     """
 
     left_camera: int = 0
     right_camera: int = 1
-    baseline_m: float = 0.15
-    squares_x: int = 5
-    squares_y: int = 7
-    square_length_m: float = 0.03
-    marker_length_m: float = 0.022
+    baseline_m: float = 14 * 0.0254  # 14 inches between camera centers
+    squares_x: int = 15
+    squares_y: int = 11
+    square_length_m: float = 0.015
+    marker_length_m: float = 0.011
     min_corners: int = 6
     min_stereo_pairs: int = 8
     visibility: float = 0.5
@@ -42,7 +43,7 @@ class StereoConfig:
             "--baseline",
             type=float,
             default=cls.baseline_m,
-            help="Distance between camera optical centers in meters",
+            help="Camera separation in meters, used only when no calibration file exists",
         )
         parser.add_argument("--squares-x", type=int, default=cls.squares_x)
         parser.add_argument("--squares-y", type=int, default=cls.squares_y)
