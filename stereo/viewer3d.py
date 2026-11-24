@@ -155,6 +155,7 @@ class DashboardState:
     use_filter: bool = True
     uart_enabled: bool = False
     uart_connect_requested: bool = False
+    zero_hip_requested: bool = False
     _drag_mode: str | None = None
     _last_x: int = 0
     _last_y: int = 0
@@ -204,6 +205,8 @@ class DashboardState:
             self.uart_connect_requested = True
         elif key in (ord("u"), ord("U")):
             self.uart_enabled = not self.uart_enabled
+        elif key in (ord("z"), ord("Z")):
+            self.zero_hip_requested = True
         elif key in (ord("+"), ord("=")):
             self.orbit.zoom(0.88)
         elif key in (ord("-"), ord("_")):
@@ -496,7 +499,7 @@ def render_3d_viewport(
 
     # Subtle 1-line bottom footer
     cv2.rectangle(canvas, (0, VIEW3D_H - 26), (VIEW3D_W, VIEW3D_H), (12, 14, 18), cv2.FILLED)
-    footer = "Drag: Orbit  Shift-Drag: Pan  Scroll: Zoom  1-4: Views  R: Reset  D: Debug  F: Filter  I: Connect UART  U: Send UART  ESC: Quit"
+    footer = "Drag: Orbit  1-4: Views  R: Reset  D: Debug  F: Filter  Z: Zero Hip  I: Connect  U: UART  ESC: Quit"
     cv2.putText(canvas, footer, (14, VIEW3D_H - 8), cv2.FONT_HERSHEY_SIMPLEX, 0.38, (145, 158, 172), 1, cv2.LINE_AA)
     right_tags = [t for t in (uart_label, log_label) if t]
     if right_tags:

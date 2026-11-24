@@ -221,6 +221,17 @@ def main(argv: list[str] | None = None) -> int:
         help="Multiplier for UART motion smoother speed/acceleration limits (default: 1.0; e.g. 0.7 gentler, 1.4 snappier)",
     )
     parser.add_argument(
+        "--hip-gain",
+        type=float,
+        default=1.0,
+        help="Scale factor for torso-twist to Joint.HIP angle (default: 1.0 = 1:1, +-90 deg -> 0..180)",
+    )
+    parser.add_argument(
+        "--flip-hip",
+        action="store_true",
+        help="Invert torso-twist direction sent on Joint.HIP",
+    )
+    parser.add_argument(
         "--no-uart-smooth",
         action="store_true",
         help="Disable velocity/acceleration-limited UART motion smoothing and send raw angles directly",
@@ -273,7 +284,13 @@ def main(argv: list[str] | None = None) -> int:
                     print(exc, file=sys.stderr)
                     return 1
 
-            tracker = StereoPoseTracker(calib, config)
+            tracker = StereoPoseTracker(
+                calib,
+                config,
+                hip_gain=args.hip_gain,
+                hip_sign=-1.0 if args.flip_hip else 1.0,
+            )
+            hip_zeroed = False
             hand_tracker = StereoHandTracker(calib, tracker.rig)
             state = DashboardState(arm=args.arm)
             arm_sh, arm_el, arm_wr = (
@@ -492,11 +509,24 @@ def main(argv: list[str] | None = None) -> int:
                                     smooth=not args.no_uart_smooth,
                                     speed_scale=args.uart_speed,
                                 )
+                            elif state.zero_hip_requested:
+                                state.zero_hip_requested = False
+                                neutral = tracker.zero_torso_yaw()
+                                if neutral is not None:
+                                    hip_zeroed = True
+                                    print(f"Torso hip zeroed at {neutral:.1f}° -> 90°", file=sys.stderr)
+                                else:
+                                    print("Torso hip zero skipped: shoulders not visible yet.", file=sys.stderr)
                             elif state.uart_enabled != prev_uart_enabled:
                                 if uart is None or not uart.active:
                                     state.uart_enabled = False
                                     print("UART not connected — plug in cable and press I first.", file=sys.stderr)
                                 elif state.uart_enabled:
+                                    if not hip_zeroed:
+                                        neutral = tracker.zero_torso_yaw()
+                                        if neutral is not None:
+                                            hip_zeroed = True
+                                            print(f"Auto-zeroed torso hip at {neutral:.1f}° -> 90°", file=sys.stderr)
                                     uart.reset_deadband()
                                     print(f"UART TX enabled on {uart.port}", file=sys.stderr)
                                 else:

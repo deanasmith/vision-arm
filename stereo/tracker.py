@@ -19,7 +19,7 @@ import numpy as np
 from arm.protocol import Joint
 from stereo.charuco import CharucoHelper, paired_charuco_points
 from stereo.config import StereoConfig
-from stereo.filters import OneEuro3D
+from stereo.filters import OneEuro1D, OneEuro3D
 from stereo.geometry import (
     RigFrame,
     StereoCalibration,
@@ -138,7 +138,7 @@ class ArmKinematics:
         """Map 3D arm kinematics to the 5 STM32 joint commands in [0, 180] deg.
 
         Joint conventions match ``stm32/Core/Inc/main.h`` and ``pose-estimation.py``:
-        - ``HIP`` (0): horizontal arm yaw in torso frame (0° side, 90° forward, 180° across)
+        - ``HIP`` (0): 1:1 torso twist around neutral facing angle (0° twisted -90°, 90° neutral, 180° twisted +90°)
         - ``HAND`` (1): hand openness (0° closed fist/pinch, 180° wide open)
         - ``ELBOW`` (2): elbow flexion angle (0° straight, 90° bent, 180° folded)
         - ``WRIST`` (3): wrist roll around forearm (0° palm down, 90° thumb up, 180° palm up)
@@ -380,6 +380,10 @@ class BoneLengthModel:
         return None
 
 
+def _wrap_deg_180(angle_deg: float) -> float:
+    return ((float(angle_deg) + 180.0) % 360.0) - 180.0
+
+
 def compute_arm_kinematics(
     points_rig: dict[int, np.ndarray],
     shoulder_idx: int,
@@ -391,18 +395,20 @@ def compute_arm_kinematics(
     index_idx: int | None = None,
     pinky_idx: int | None = None,
     thumb_idx: int | None = None,
+    hip_yaw_override_deg: float | None = None,
+    use_hip_yaw_override: bool = False,
     prev_hip_yaw_deg: float | None = None,
 ) -> ArmKinematics:
     """Compute intuitive 3D hip/shoulder/elbow/wrist/hand angles in the rig-aligned frame."""
     sh = points_rig.get(shoulder_idx)
     el = points_rig.get(elbow_idx)
     if sh is None or el is None:
-        return ArmKinematics()
+        return ArmKinematics(hip_yaw_deg=hip_yaw_override_deg)
 
     v_up = el - sh
     upper_m = float(np.linalg.norm(v_up))
     if upper_m < 1e-4:
-        return ArmKinematics()
+        return ArmKinematics(hip_yaw_deg=hip_yaw_override_deg)
 
     cos_el = float(np.clip(v_up[1] / upper_m, -1.0, 1.0))
     elevation_deg = float(np.degrees(np.arccos(cos_el)))
@@ -411,45 +417,24 @@ def compute_arm_kinematics(
 
     wr = points_rig.get(wrist_idx)
 
-    # Base/hip horizontal yaw in the torso frame:
-    # 0° = arm out to its own side, 90° = straight forward toward cameras, 180° = across chest.
-    opp_sh = points_rig.get(opp_shoulder_idx) if opp_shoulder_idx is not None else None
-    if opp_sh is not None:
-        torso_side = sh - opp_sh
-        torso_side = np.array([float(torso_side[0]), 0.0, float(torso_side[2])], dtype=np.float64)
-        ts_norm = float(np.linalg.norm(torso_side))
+    if use_hip_yaw_override or hip_yaw_override_deg is not None:
+        hip_yaw_deg: float | None = (
+            float(np.clip(hip_yaw_override_deg, 0.0, 180.0)) if hip_yaw_override_deg is not None else None
+        )
     else:
-        torso_side = np.zeros(3, dtype=np.float64)
-        ts_norm = 0.0
-
-    if ts_norm >= 0.12:
-        torso_side /= ts_norm
-        # In rig frame (+X left, +Y down, -Z toward cameras):
-        # For left arm (side_sign=+1), down x torso_left points forward (-Z).
-        # For right arm (side_sign=-1), torso_right x down points forward (-Z).
-        down = np.array([0.0, 1.0, 0.0], dtype=np.float64)
-        torso_fwd = np.cross(down, torso_side) * side_sign
-        tf_norm = float(np.linalg.norm(torso_fwd))
-        torso_fwd = torso_fwd / tf_norm if tf_norm > 1e-6 else np.array([0.0, 0.0, -1.0], dtype=np.float64)
-    else:
-        torso_side = np.array([side_sign, 0.0, 0.0], dtype=np.float64)
-        torso_fwd = np.array([0.0, 0.0, -1.0], dtype=np.float64)
-
-    reach_vec = (wr - sh) if wr is not None else v_up
-    arm_side = float(np.dot(reach_vec, torso_side))
-    arm_fwd = float(np.dot(reach_vec, torso_fwd))
-    horiz_reach = math.hypot(arm_side, arm_fwd)
-    if horiz_reach >= 0.10:
-        if arm_fwd >= 0.0:
-            hip_yaw_deg: float | None = float(np.degrees(math.atan2(arm_fwd, arm_side)))
-        elif prev_hip_yaw_deg is not None and abs(arm_side) < 0.08:
-            # Avoid a 0° <-> 180° teleport when arm drifts slightly behind the coronal plane.
-            hip_yaw_deg = 0.0 if prev_hip_yaw_deg < 90.0 else 180.0
+        # Fallback pure shoulder-line torso twist (0 deg = -90 deg twist, 90 deg = facing cameras, 180 deg = +90 deg twist).
+        opp_sh = points_rig.get(opp_shoulder_idx) if opp_shoulder_idx is not None else None
+        if opp_sh is not None:
+            v_sh = (sh - opp_sh) * side_sign  # always LEFT_SHOULDER - RIGHT_SHOULDER
+            span_m = float(np.linalg.norm(v_sh))
+            horiz_span = math.hypot(float(v_sh[0]), float(v_sh[2]))
+            if 0.24 <= span_m <= 0.54 and horiz_span >= 0.16:
+                raw_yaw = float(np.degrees(math.atan2(float(v_sh[2]), float(v_sh[0]))))
+                hip_yaw_deg = float(np.clip(90.0 + raw_yaw, 0.0, 180.0))
+            else:
+                hip_yaw_deg = prev_hip_yaw_deg
         else:
-            # Clamp cleanly to nearest endpoint if arm swings slightly behind the coronal plane.
-            hip_yaw_deg = 0.0 if arm_side >= 0.0 else 180.0
-    else:
-        hip_yaw_deg = prev_hip_yaw_deg
+            hip_yaw_deg = prev_hip_yaw_deg
 
     forearm_cm: float | None = None
     elbow_interior_deg: float | None = None
@@ -750,7 +735,14 @@ def check_charuco_board_3d(
 class StereoPoseTracker:
     """Multi-view stereo 3D pose tracker with rigid bone calibration and single-camera handover."""
 
-    def __init__(self, calib: StereoCalibration, config: StereoConfig | None = None):
+    def __init__(
+        self,
+        calib: StereoCalibration,
+        config: StereoConfig | None = None,
+        *,
+        hip_gain: float = 1.0,
+        hip_sign: float = 1.0,
+    ):
         self.calib = calib
         self.config = config or StereoConfig()
         self.rig = rig_frame_from_calibration(calib)
@@ -761,7 +753,95 @@ class StereoPoseTracker:
         self._prev_joint: dict[int, StereoJoint] = {}
         self._prev_source: dict[int, str] = {}
         self._prev_hip_yaw: dict[str, float | None] = {"left": None, "right": None}
+        self._torso_yaw_filter = OneEuro1D(min_cutoff=1.2, beta=0.02, d_cutoff=1.0, max_jump=120.0, max_gap_s=0.6)
+        self._torso_yaw_unwrapped: float | None = None
+        self._torso_yaw_ts: float = -1e9
+        self._torso_neutral_yaw_deg: float = 0.0
+        self._torso_neutral_set: bool = False
+        self._torso_spike_streak: int = 0
+        self._hip_gain = float(hip_gain)
+        self._hip_sign = float(hip_sign)
         self._charuco: CharucoHelper | None = None
+
+    def zero_torso_yaw(self) -> float | None:
+        """Set the current filtered torso yaw as neutral (90 deg on Joint.HIP)."""
+        if self._torso_yaw_unwrapped is None:
+            return None
+        self._torso_neutral_yaw_deg = _wrap_deg_180(self._torso_yaw_unwrapped)
+        self._torso_neutral_set = True
+        self._torso_yaw_unwrapped = self._torso_neutral_yaw_deg
+        self._torso_yaw_filter.reset()
+        self._torso_spike_streak = 0
+        return self._torso_neutral_yaw_deg
+
+    def _update_torso_twist(
+        self,
+        joints: dict[int, StereoJoint],
+        timestamp: float,
+        *,
+        use_filter: bool,
+    ) -> float | None:
+        """Compute clean 1:1 torso twist angle in [0, 180] deg (90 deg = neutral)."""
+        ls = joints.get(LEFT_SHOULDER)
+        rs = joints.get(RIGHT_SHOULDER)
+        measured_yaw: float | None = None
+        if (
+            ls is not None
+            and rs is not None
+            and ls.source == "stereo"
+            and rs.source == "stereo"
+            and max(ls.sampson_px, rs.sampson_px) <= 15.0
+        ):
+            v_sh = ls.xyz_rig - rs.xyz_rig
+            span_m = float(np.linalg.norm(v_sh))
+            horiz_span = math.hypot(float(v_sh[0]), float(v_sh[2]))
+            learned_span = self.bone_model.get(LEFT_SHOULDER, RIGHT_SHOULDER)
+            if learned_span is not None:
+                span_ok = abs(span_m - learned_span) <= 0.20 * learned_span
+            else:
+                span_ok = 0.26 <= span_m <= 0.50
+            if span_ok and horiz_span >= 0.18:
+                cand_yaw = float(np.degrees(math.atan2(float(v_sh[2]), float(v_sh[0]))))
+                # Once zeroed, ignore >100 deg backward-facing or 180-deg L/R flip measurements
+                # so the angle never crosses the +-180 deg branch cut or winds up by 360 deg.
+                if not self._torso_neutral_set or abs(_wrap_deg_180(cand_yaw - self._torso_neutral_yaw_deg)) <= 100.0:
+                    measured_yaw = cand_yaw
+
+        if measured_yaw is not None:
+            if self._torso_neutral_set:
+                target = self._torso_neutral_yaw_deg + _wrap_deg_180(measured_yaw - self._torso_neutral_yaw_deg)
+            elif self._torso_yaw_unwrapped is None:
+                target = measured_yaw
+            else:
+                target = self._torso_yaw_unwrapped + _wrap_deg_180(measured_yaw - self._torso_yaw_unwrapped)
+
+            if self._torso_yaw_unwrapped is None:
+                unwrapped = target
+                self._torso_spike_streak = 0
+            else:
+                dt = timestamp - self._torso_yaw_ts
+                step = target - self._torso_yaw_unwrapped
+                # Reject 1-4 frame occlusion / L-R flip spikes, but allow real re-acquisition
+                # if the new orientation holds consistently for 5+ consecutive frames.
+                max_streak = 5 if abs(step) > 90.0 else 2
+                if dt < 0.40 and abs(step) > 35.0 and self._torso_spike_streak < max_streak:
+                    self._torso_spike_streak += 1
+                    unwrapped = self._torso_yaw_unwrapped
+                else:
+                    self._torso_spike_streak = 0
+                    unwrapped = target
+
+            if use_filter:
+                filtered = self._torso_yaw_filter.filter(unwrapped, timestamp)
+            else:
+                filtered = unwrapped
+            self._torso_yaw_unwrapped = filtered
+            self._torso_yaw_ts = timestamp
+        elif self._torso_yaw_unwrapped is None or (timestamp - self._torso_yaw_ts) > 0.60:
+            return None
+
+        delta = self._torso_yaw_unwrapped - self._torso_neutral_yaw_deg
+        return float(np.clip(90.0 + self._hip_sign * self._hip_gain * delta, 0.0, 180.0))
 
     def _recent_prev(self, idx: int, timestamp: float, max_age_s: float = 0.45) -> np.ndarray | None:
         if idx not in self._prev_rig:
@@ -796,9 +876,11 @@ class StereoPoseTracker:
 
             existing = joints.get(sh_idx)
             if existing is not None and len(rays) >= 2:
+                # Leave clean, tight-epipolar stereo untouched; only damp noisy/drifting frames.
+                excess_samp = max(0.0, existing.sampson_px - 6.0)
+                if excess_samp <= 0.0:
+                    continue
                 w_max = max(r[2] for r in rays)
-                # Gently damp depth noise when epipolar residual rises, without altering clean stereo.
-                excess_samp = max(0.0, existing.sampson_px - 10.0)
                 smooth_w = (0.015 + 0.008 * excess_samp) * w_max if prev_sh is not None else 0.0
                 refined_rig = _solve_weighted_joint(
                     existing.xyz_rig,
@@ -1139,6 +1221,7 @@ class StereoPoseTracker:
                 self._prev_source[idx] = j.source
 
         pts_rig = {idx: j.xyz_rig for idx, j in joints.items()}
+        torso_hip_deg = self._update_torso_twist(joints, timestamp, use_filter=use_filter)
         left_arm = compute_arm_kinematics(
             pts_rig,
             LEFT_SHOULDER,
@@ -1149,6 +1232,8 @@ class StereoPoseTracker:
             index_idx=LEFT_INDEX,
             pinky_idx=LEFT_PINKY,
             thumb_idx=LEFT_THUMB,
+            hip_yaw_override_deg=torso_hip_deg,
+            use_hip_yaw_override=True,
             prev_hip_yaw_deg=self._prev_hip_yaw["left"],
         )
         right_arm = compute_arm_kinematics(
@@ -1161,6 +1246,8 @@ class StereoPoseTracker:
             index_idx=RIGHT_INDEX,
             pinky_idx=RIGHT_PINKY,
             thumb_idx=RIGHT_THUMB,
+            hip_yaw_override_deg=torso_hip_deg,
+            use_hip_yaw_override=True,
             prev_hip_yaw_deg=self._prev_hip_yaw["right"],
         )
         if left_arm.hip_yaw_deg is not None:

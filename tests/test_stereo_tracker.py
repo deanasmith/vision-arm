@@ -295,6 +295,52 @@ class StereoTrackerTests(unittest.TestCase):
         self.assertTrue(state.uart_enabled)
         self.assertFalse(state.handle_key(ord("U")))
         self.assertFalse(state.uart_enabled)
+        self.assertFalse(state.zero_hip_requested)
+        self.assertFalse(state.handle_key(ord("z")))
+        self.assertTrue(state.zero_hip_requested)
+
+    def test_pure_torso_twist_one_to_one_and_zeroing(self):
+        tracker = StereoPoseTracker(self.calib)
+
+        def make_frame(yaw_deg: float, t: float, span: float = 0.36):
+            rad = np.radians(yaw_deg)
+            dx = 0.5 * span * np.cos(rad)
+            dz = 0.5 * span * np.sin(rad)
+            pts_rig = {
+                LEFT_SHOULDER: np.array([dx, -0.10, 1.50 + dz]),
+                RIGHT_SHOULDER: np.array([-dx, -0.10, 1.50 - dz]),
+                LEFT_HIP: np.array([0.14, 0.35, 1.50]),
+                RIGHT_HIP: np.array([-0.14, 0.35, 1.50]),
+                RIGHT_ELBOW: np.array([-dx, 0.18, 1.50 - dz]),
+                RIGHT_WRIST: np.array([-dx, 0.40, 1.50 - dz]),
+            }
+            pts_cam1 = {idx: self.rig.to_cam1(p) for idx, p in pts_rig.items()}
+            return tracker.process(
+                _project_obs(self.calib, pts_cam1, 1),
+                _project_obs(self.calib, pts_cam1, 2),
+                timestamp=t,
+                use_filter=False,
+            )
+
+        # Facing straight -> 90 deg
+        f0 = make_frame(0.0, 0.0)
+        self.assertAlmostEqual(f0.right_arm.hip_yaw_deg, 90.0, delta=1.5)
+        # Twist smoothly over a few frames to +35 deg -> 125 deg (1:1)
+        for step_i, yaw in enumerate((12.0, 24.0, 35.0, 35.0, 35.0), start=1):
+            f1 = make_frame(yaw, 0.04 * step_i)
+        self.assertAlmostEqual(f1.right_arm.hip_yaw_deg, 125.0, delta=1.5)
+        # Single-frame occlusion spike to -60 deg (95 deg jump) is rejected
+        f_spike = make_frame(-60.0, 0.24)
+        self.assertAlmostEqual(f_spike.right_arm.hip_yaw_deg, 125.0, delta=1.5)
+        # Zero at +35 deg -> next frame at +35 deg reads 90 deg
+        neutral = tracker.zero_torso_yaw()
+        self.assertAlmostEqual(neutral, 35.0, delta=1.5)
+        f2 = make_frame(35.0, 0.28)
+        self.assertAlmostEqual(f2.right_arm.hip_yaw_deg, 90.0, delta=1.5)
+        # Twist -30 deg from new neutral (to +5 deg world) -> 60 deg (1:1)
+        for step_i, yaw in enumerate((25.0, 15.0, 5.0, 5.0, 5.0), start=1):
+            f3 = make_frame(yaw, 0.28 + 0.04 * step_i)
+        self.assertAlmostEqual(f3.right_arm.hip_yaw_deg, 60.0, delta=1.5)
 
     def test_right_arm_five_uart_joint_angles(self):
         tracker = StereoPoseTracker(self.calib)
