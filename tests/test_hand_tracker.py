@@ -93,16 +93,18 @@ def _make_hand_world(
 class HandTrackerTests(unittest.TestCase):
     def test_hand_open_close_and_pinch_and_scale_invariance(self):
         open_deg = compute_hand_open_deg(_make_hand_world(curl=0.0, pinch=0.0))
+        relaxed_open_deg = compute_hand_open_deg(_make_hand_world(curl=0.22, pinch=0.20))
         fist_deg = compute_hand_open_deg(_make_hand_world(curl=1.0, pinch=0.8))
         pinch_deg = compute_hand_open_deg(_make_hand_world(curl=0.1, pinch=1.0))
-        half_deg = compute_hand_open_deg(_make_hand_world(curl=0.5, pinch=0.35))
+        half_deg = compute_hand_open_deg(_make_hand_world(curl=0.55, pinch=0.40))
         small_open = compute_hand_open_deg(_make_hand_world(curl=0.0, pinch=0.0, scale=0.6))
 
-        self.assertGreater(open_deg, 170.0)
+        self.assertGreater(open_deg, 178.0)
+        self.assertGreater(relaxed_open_deg, 160.0)
         self.assertLess(fist_deg, 10.0)
         self.assertLess(pinch_deg, 10.0)
-        self.assertGreater(half_deg, 40.0)
-        self.assertLess(half_deg, 145.0)
+        self.assertGreater(half_deg, 45.0)
+        self.assertLess(half_deg, 165.0)
         self.assertAlmostEqual(open_deg, small_open, places=3)
 
     def test_wrist_roll_right_and_left_arms_across_orientations(self):

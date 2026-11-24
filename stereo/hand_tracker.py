@@ -177,24 +177,29 @@ def compute_hand_open_deg(world_pts: np.ndarray) -> float:
         mcp_d = max(float(np.linalg.norm(mcp - wrist)), 0.03)
         tip_d = float(np.linalg.norm(tip - wrist))
         ratio = tip_d / mcp_d
-        ext = float(np.clip((ratio - 1.05) / 0.80, 0.0, 1.0))
+        # Relaxed open fingers sit near ratio ~1.60-1.65 and PIP ~145-155 deg;
+        # saturate there so the gripper opens fully without hyper-extending fingers.
+        ext = float(np.clip((ratio - 1.05) / 0.58, 0.0, 1.0))
 
         pip_deg = calculate_3d_angle(mcp, pip, tip)
-        ang = float(np.clip((pip_deg - 75.0) / 90.0, 0.0, 1.0))
+        ang = float(np.clip((pip_deg - 80.0) / 70.0, 0.0, 1.0))
         finger_scores.append(0.55 * ext + 0.45 * ang)
 
     four_finger = float(np.median(finger_scores))
 
     palm_scale = max(float(np.linalg.norm(world_pts[MIDDLE_MCP] - wrist)), 0.04)
     pinch_ratio = float(np.linalg.norm(world_pts[THUMB_TIP] - world_pts[INDEX_TIP])) / palm_scale
-    pinch_open = float(np.clip((pinch_ratio - 0.30) / 0.85, 0.0, 1.0))
+    pinch_open = float(np.clip((pinch_ratio - 0.30) / 0.65, 0.0, 1.0))
 
     # Both a full fist and a deliberate thumb-index pinch close smoothly to 0 deg;
-    # opening the hand opens smoothly to 180 deg.
+    # opening the hand biases toward full 180 deg travel for the mechanical gripper.
     base = min(four_finger, 0.75 * four_finger + 0.25 * pinch_open)
     w_pinch = float(np.clip((0.40 - pinch_open) / 0.25, 0.0, 1.0))
-    open_frac = (1.0 - w_pinch) * base + w_pinch * min(base, pinch_open)
-    return float(np.clip(open_frac * 180.0, 0.0, 180.0))
+    raw_open = (1.0 - w_pinch) * base + w_pinch * min(base, pinch_open)
+    # Boost mid-to-open range and deadzone the very bottom so closed stays 0 deg
+    # while a comfortably open hand hits a solid 180 deg.
+    rescaled = float(np.clip((raw_open - 0.05) / 0.78, 0.0, 1.0)) ** 0.75
+    return float(np.clip(rescaled * 180.0, 0.0, 180.0))
 
 
 def compute_wrist_roll_deg(
