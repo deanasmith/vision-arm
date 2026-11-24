@@ -7,7 +7,7 @@ import numpy as np
 
 from stereo.config import StereoConfig
 
-ARUCO_DICT = cv2.aruco.DICT_5X5_50
+ARUCO_DICT = cv2.aruco.DICT_4X4_250
 
 
 def make_board(config: StereoConfig) -> cv2.aruco.CharucoBoard:
