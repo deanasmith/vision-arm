@@ -41,7 +41,7 @@ def calculate_shoulder_angle(shoulder_xy, elbow_xy):
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(
-        description="Single-camera pose demo. Sends the left shoulder and elbow angles to the STM32 over UART.",
+        description="Single-camera pose demo. Sends the right shoulder and elbow angles to the STM32 over UART.",
     )
     parser.add_argument(
         "--port",
@@ -76,8 +76,8 @@ def open_arm(port, baud):
         )
         return None
     print(
-        f"UART {port} @ {baud} 8N1 — sending left shoulder (id {int(Joint.SHOULDER)}) "
-        f"and left elbow (id {int(Joint.ELBOW)})",
+        f"UART {port} @ {baud} 8N1 — sending right shoulder (id {int(Joint.SHOULDER)}) "
+        f"and right elbow (id {int(Joint.ELBOW)})",
         file=sys.stderr,
     )
     return link
@@ -141,15 +141,15 @@ def main(argv=None) -> int:
                         cv2.circle(frame, (x1, y1), 5, (0, 0, 255), cv2.FILLED)
                         cv2.circle(frame, (x2, y2), 5, (0, 0, 255), cv2.FILLED)
 
-                # --- 2. Left Arm Logic (Forearm & Math) ---
-                if pose_lms[11].visibility > 0.5 and pose_lms[13].visibility > 0.5:
-                    elbow_x, elbow_y = int(pose_lms[13].x * w), int(pose_lms[13].y * h)
+                # --- 2. Right Arm Logic (Forearm & Math) ---
+                if pose_lms[12].visibility > 0.5 and pose_lms[14].visibility > 0.5:
+                    elbow_x, elbow_y = int(pose_lms[14].x * w), int(pose_lms[14].y * h)
 
                     # Shoulder angle is the lift of the drawn upper-arm line from straight down.
-                    shoulder_px = (pose_lms[11].x * w, pose_lms[11].y * h)
-                    elbow_px = (pose_lms[13].x * w, pose_lms[13].y * h)
-                    shoulder_3d = [pose_lms[11].x, pose_lms[11].y, pose_lms[11].z]
-                    elbow_3d = [pose_lms[13].x, pose_lms[13].y, pose_lms[13].z]
+                    shoulder_px = (pose_lms[12].x * w, pose_lms[12].y * h)
+                    elbow_px = (pose_lms[14].x * w, pose_lms[14].y * h)
+                    shoulder_3d = [pose_lms[12].x, pose_lms[12].y, pose_lms[12].z]
+                    elbow_3d = [pose_lms[14].x, pose_lms[14].y, pose_lms[14].z]
                     shoulder_angle = calculate_shoulder_angle(shoulder_px, elbow_px)
 
                     shoulder_px = (int(shoulder_px[0]), int(shoulder_px[1]))
@@ -157,14 +157,14 @@ def main(argv=None) -> int:
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
                     # Determine Wrist Position
-                    if results.left_hand_landmarks:
-                        wrist_x = int(results.left_hand_landmarks.landmark[0].x * w)
-                        wrist_y = int(results.left_hand_landmarks.landmark[0].y * h)
-                        wrist_z = pose_lms[15].z
-                    elif pose_lms[15].visibility > 0.5:
-                        wrist_x = int(pose_lms[15].x * w)
-                        wrist_y = int(pose_lms[15].y * h)
-                        wrist_z = pose_lms[15].z
+                    if results.right_hand_landmarks:
+                        wrist_x = int(results.right_hand_landmarks.landmark[0].x * w)
+                        wrist_y = int(results.right_hand_landmarks.landmark[0].y * h)
+                        wrist_z = pose_lms[16].z
+                    elif pose_lms[16].visibility > 0.5:
+                        wrist_x = int(pose_lms[16].x * w)
+                        wrist_y = int(pose_lms[16].y * h)
+                        wrist_z = pose_lms[16].z
                     else:
                         wrist_x, wrist_y, wrist_z = None, None, None
 
@@ -173,21 +173,21 @@ def main(argv=None) -> int:
                         cv2.line(frame, (elbow_x, elbow_y), (wrist_x, wrist_y), (0, 255, 0), 3)
                         cv2.circle(frame, (wrist_x, wrist_y), 5, (0, 0, 255), cv2.FILLED)
 
-                        wrist_3d = [pose_lms[15].x, pose_lms[15].y, wrist_z]
+                        wrist_3d = [pose_lms[16].x, pose_lms[16].y, wrist_z]
                         elbow_angle = calculate_3d_angle(shoulder_3d, elbow_3d, wrist_3d)
 
                         cv2.putText(frame, f"Elbow: {int(elbow_angle)}", (elbow_x + 15, elbow_y),
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
-                # --- 3. Right Arm Logic (Forearm Only) ---
-                if pose_lms[14].visibility > 0.5:
-                    elbow_x, elbow_y = int(pose_lms[14].x * w), int(pose_lms[14].y * h)
-                    if results.right_hand_landmarks:
-                        wrist_x = int(results.right_hand_landmarks.landmark[0].x * w)
-                        wrist_y = int(results.right_hand_landmarks.landmark[0].y * h)
-                    elif pose_lms[16].visibility > 0.5:
-                        wrist_x = int(pose_lms[16].x * w)
-                        wrist_y = int(pose_lms[16].y * h)
+                # --- 3. Left Arm Logic (Forearm Only) ---
+                if pose_lms[13].visibility > 0.5:
+                    elbow_x, elbow_y = int(pose_lms[13].x * w), int(pose_lms[13].y * h)
+                    if results.left_hand_landmarks:
+                        wrist_x = int(results.left_hand_landmarks.landmark[0].x * w)
+                        wrist_y = int(results.left_hand_landmarks.landmark[0].y * h)
+                    elif pose_lms[15].visibility > 0.5:
+                        wrist_x = int(pose_lms[15].x * w)
+                        wrist_y = int(pose_lms[15].y * h)
                     else:
                         wrist_x, wrist_y = None, None
 

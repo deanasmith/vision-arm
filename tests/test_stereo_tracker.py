@@ -25,7 +25,10 @@ from stereo.tracker import (
     LEFT_WRIST,
     RIGHT_ELBOW,
     RIGHT_HIP,
+    RIGHT_INDEX,
+    RIGHT_PINKY,
     RIGHT_SHOULDER,
+    RIGHT_THUMB,
     RIGHT_WRIST,
     StereoPoseTracker,
 )
@@ -283,6 +286,7 @@ class StereoTrackerTests(unittest.TestCase):
 
     def test_dashboard_uart_hotkeys_default_disarmed(self):
         state = DashboardState()
+        self.assertEqual(state.arm, "right")
         self.assertFalse(state.uart_enabled)
         self.assertFalse(state.uart_connect_requested)
         self.assertFalse(state.handle_key(ord("i")))
@@ -291,6 +295,34 @@ class StereoTrackerTests(unittest.TestCase):
         self.assertTrue(state.uart_enabled)
         self.assertFalse(state.handle_key(ord("U")))
         self.assertFalse(state.uart_enabled)
+
+    def test_right_arm_five_uart_joint_angles(self):
+        tracker = StereoPoseTracker(self.calib)
+        pts_rig = {
+            LEFT_SHOULDER: np.array([0.18, -0.10, 1.50]),
+            RIGHT_SHOULDER: np.array([-0.18, -0.10, 1.50]),
+            LEFT_HIP: np.array([0.14, 0.35, 1.50]),
+            RIGHT_HIP: np.array([-0.14, 0.35, 1.50]),
+            # Right arm reaching forward toward cameras (-Z), 90 deg elevation, 90 deg elbow bend.
+            RIGHT_ELBOW: np.array([-0.18, -0.10, 1.20]),
+            RIGHT_WRIST: np.array([-0.18, -0.35, 1.20]),
+            RIGHT_INDEX: np.array([-0.18, -0.45, 1.20]),
+            RIGHT_PINKY: np.array([-0.14, -0.44, 1.20]),
+            RIGHT_THUMB: np.array([-0.25, -0.41, 1.20]),
+            LEFT_ELBOW: np.array([0.22, 0.20, 1.50]),
+            LEFT_WRIST: np.array([0.22, 0.45, 1.50]),
+        }
+        pts_cam1 = {idx: self.rig.to_cam1(p) for idx, p in pts_rig.items()}
+        obs0 = _project_obs(self.calib, pts_cam1, 1)
+        obs1 = _project_obs(self.calib, pts_cam1, 2)
+        frame = tracker.process(obs0, obs1, timestamp=0.0, use_filter=False)
+        angles = frame.right_arm.to_uart_angles()
+        self.assertEqual(set(angles.keys()), {Joint.HIP, Joint.HAND, Joint.ELBOW, Joint.WRIST, Joint.SHOULDER})
+        self.assertAlmostEqual(angles[Joint.HIP], 90.0, delta=2.0)
+        self.assertAlmostEqual(angles[Joint.SHOULDER], 90.0, delta=2.0)
+        self.assertAlmostEqual(angles[Joint.ELBOW], 90.0, delta=2.0)
+        self.assertGreater(angles[Joint.WRIST], 150.0)
+        self.assertGreater(angles[Joint.HAND], 60.0)
 
 
 if __name__ == "__main__":

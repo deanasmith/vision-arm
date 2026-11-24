@@ -61,11 +61,19 @@ _UPPER_BODY_EDGES = (
     (RIGHT_EAR, NOSE),
 )
 
-_EPI_JOINTS = (
-    (LEFT_SHOULDER, (255, 210, 60)),
-    (LEFT_ELBOW, (40, 175, 255)),
-    (LEFT_WRIST, (220, 90, 255)),
-)
+def _arm_indices(arm: str) -> tuple[int, int, int]:
+    if arm == "left":
+        return (LEFT_SHOULDER, LEFT_ELBOW, LEFT_WRIST)
+    return (RIGHT_SHOULDER, RIGHT_ELBOW, RIGHT_WRIST)
+
+
+def _epi_joints(arm: str) -> tuple[tuple[int, tuple[int, int, int]], ...]:
+    sh, el, wr = _arm_indices(arm)
+    return (
+        (sh, (255, 210, 60)),
+        (el, (40, 175, 255)),
+        (wr, (220, 90, 255)),
+    )
 
 
 @dataclass
@@ -141,6 +149,7 @@ class OrbitCamera:
 @dataclass
 class DashboardState:
     orbit: OrbitCamera = field(default_factory=OrbitCamera)
+    arm: str = "right"
     debug_overlay: bool = False
     use_filter: bool = True
     uart_enabled: bool = False
@@ -263,6 +272,7 @@ def draw_camera_panel(
     stereo: StereoFrame,
     calib: StereoCalibration,
     *,
+    arm: str = "right",
     debug_overlay: bool = False,
 ) -> np.ndarray:
     """Clean camera view (CAM_W x CAM_H) with minimal 2D skeleton + optional debug overlays."""
@@ -270,13 +280,16 @@ def draw_camera_panel(
     vis = cv2.resize(frame, (CAM_W, CAM_H), interpolation=cv2.INTER_AREA)
     sx = CAM_W / float(w)
     sy = CAM_H / float(h)
+    arm_sh, arm_el, arm_wr = _arm_indices(arm)
+    arm_edges = ((arm_sh, arm_el), (arm_el, arm_wr))
+    arm_joint_set = (arm_sh, arm_el, arm_wr)
 
     def sc(xy: tuple[float, float]) -> tuple[int, int]:
         return int(round(xy[0] * sx)), int(round(xy[1] * sy))
 
     if debug_overlay:
         other_cam = 2 if camera_num == 1 else 1
-        for idx, color in _EPI_JOINTS:
+        for idx, color in _epi_joints(arm):
             j = stereo.joints.get(idx)
             if j is not None:
                 src_pt = j.pt2 if camera_num == 1 else j.pt1
@@ -294,14 +307,14 @@ def draw_camera_panel(
     for a, b in _UPPER_BODY_EDGES:
         if a not in own_xy or b not in own_xy:
             continue
-        is_left_arm = (a, b) in ((LEFT_SHOULDER, LEFT_ELBOW), (LEFT_ELBOW, LEFT_WRIST))
-        color = _COLOR_STEREO if is_left_arm else (160, 175, 165)
-        thick = 2 if is_left_arm else 1
+        is_active_arm = (a, b) in arm_edges
+        color = _COLOR_STEREO if is_active_arm else (160, 175, 165)
+        thick = 2 if is_active_arm else 1
         cv2.line(vis, sc(own_xy[a]), sc(own_xy[b]), color, thick, cv2.LINE_AA)
 
     for idx, xy in own_xy.items():
         j = stereo.joints.get(idx)
-        r = 4 if idx in (LEFT_SHOULDER, LEFT_ELBOW, LEFT_WRIST) else 3
+        r = 4 if idx in arm_joint_set else 3
         cv2.circle(vis, sc(xy), r, _joint_color(j), cv2.FILLED, cv2.LINE_AA)
 
     if debug_overlay:
@@ -367,10 +380,13 @@ def render_3d_viewport(
     _draw_camera_frustum(proj, canvas, rig.cam2_pos_rig, rig.cam2_R_rig, c2_col)
 
     pts_rig = {idx: j.xyz_rig for idx, j in stereo.joints.items()}
+    arm_sh, arm_el, arm_wr = _arm_indices(state.arm)
+    arm_edges = ((arm_sh, arm_el), (arm_el, arm_wr))
+    arm_joint_set = (arm_sh, arm_el, arm_wr)
 
-    # Optional debug 3D rays from both cameras to left arm
+    # Optional debug 3D rays from both cameras to the active arm
     if state.debug_overlay:
-        for idx in (LEFT_SHOULDER, LEFT_ELBOW, LEFT_WRIST):
+        for idx in arm_joint_set:
             if idx in pts_rig:
                 pt = pts_rig[idx]
                 proj.line(canvas, rig.cam1_pos_rig, pt, (75, 65, 45), 1)
@@ -402,8 +418,8 @@ def render_3d_viewport(
     drawable.sort(key=lambda item: -item[0])
 
     for _d, a, b in drawable:
-        is_left_arm = (a, b) in ((LEFT_SHOULDER, LEFT_ELBOW), (LEFT_ELBOW, LEFT_WRIST))
-        if is_left_arm:
+        is_active_arm = (a, b) in arm_edges
+        if is_active_arm:
             handover = stereo.joints[a].source in ("ray+bone", "hold") or stereo.joints[b].source in ("ray+bone", "hold")
             color = _COLOR_HANDOVER if handover else _COLOR_STEREO
             thick = 4
@@ -422,28 +438,29 @@ def render_3d_viewport(
     for depth_v, j, ux, uy in proj_joints:
         if not (0 <= ux < VIEW3D_W and 0 <= uy < VIEW3D_H):
             continue
-        base_r = 6 if j.index in (LEFT_SHOULDER, LEFT_ELBOW, LEFT_WRIST) else 4
+        base_r = 6 if j.index in arm_joint_set else 4
         r = max(3, min(10, int(round(base_r * 2.0 / max(depth_v, 0.5)))))
         cv2.circle(canvas, (ux, uy), r + 1, (14, 16, 20), cv2.FILLED, cv2.LINE_AA)
         cv2.circle(canvas, (ux, uy), r, _joint_color(j), cv2.FILLED, cv2.LINE_AA)
 
     # Minimal 1-line readout at top-left
-    la = stereo.left_arm
-    parts = [f"[{state.orbit.preset_name}]"]
-    if la.upper_arm_cm is not None:
-        parts.append(f"Up {la.upper_arm_cm:.1f}cm")
-    if la.forearm_cm is not None:
-        parts.append(f"Fa {la.forearm_cm:.1f}cm")
-    if la.hip_yaw_deg is not None:
-        parts.append(f"Hip {la.hip_yaw_deg:.0f}")
-    if la.elevation_deg is not None:
-        parts.append(f"Sh {la.elevation_deg:.0f}")
-    if la.elbow_interior_deg is not None:
-        parts.append(f"El {la.elbow_interior_deg:.0f}")
-    if la.wrist_angle_deg is not None:
-        parts.append(f"Wr {la.wrist_angle_deg:.0f}")
-    if la.hand_open_deg is not None:
-        parts.append(f"Hnd {la.hand_open_deg:.0f}")
+    active_arm = stereo.left_arm if state.arm == "left" else stereo.right_arm
+    arm_tag = "L" if state.arm == "left" else "R"
+    parts = [f"[{state.orbit.preset_name} {arm_tag}]"]
+    if active_arm.upper_arm_cm is not None:
+        parts.append(f"Up {active_arm.upper_arm_cm:.1f}cm")
+    if active_arm.forearm_cm is not None:
+        parts.append(f"Fa {active_arm.forearm_cm:.1f}cm")
+    if active_arm.hip_yaw_deg is not None:
+        parts.append(f"Hip {active_arm.hip_yaw_deg:.0f}")
+    if active_arm.elevation_deg is not None:
+        parts.append(f"Sh {active_arm.elevation_deg:.0f}")
+    if active_arm.elbow_interior_deg is not None:
+        parts.append(f"El {active_arm.elbow_interior_deg:.0f}")
+    if active_arm.wrist_angle_deg is not None:
+        parts.append(f"Wr {active_arm.wrist_angle_deg:.0f}")
+    if active_arm.hand_open_deg is not None:
+        parts.append(f"Hnd {active_arm.hand_open_deg:.0f}")
     if math.isfinite(stereo.median_ray_gap_mm):
         parts.append(f"gap {stereo.median_ray_gap_mm:.1f}mm")
     parts.append(f"{fps:.0f} fps")
@@ -497,6 +514,7 @@ def compose_dashboard(
         xy_cam1,
         stereo,
         calib,
+        arm=state.arm,
         debug_overlay=state.debug_overlay,
     )
     p1 = draw_camera_panel(
@@ -507,6 +525,7 @@ def compose_dashboard(
         xy_cam0,
         stereo,
         calib,
+        arm=state.arm,
         debug_overlay=state.debug_overlay,
     )
     left_tile, right_tile = (p0, p1) if rig.cam0_is_physical_left else (p1, p0)

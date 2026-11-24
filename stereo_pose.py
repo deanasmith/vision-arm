@@ -25,6 +25,9 @@ from stereo.tracker import (
     LEFT_ELBOW,
     LEFT_SHOULDER,
     LEFT_WRIST,
+    RIGHT_ELBOW,
+    RIGHT_SHOULDER,
+    RIGHT_WRIST,
     StereoPoseTracker,
     UPPER_BODY_INDICES,
 )
@@ -189,6 +192,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Disable UART output even when a USB-UART adapter is connected",
     )
     parser.add_argument(
+        "--arm",
+        choices=("right", "left"),
+        default="right",
+        help="Which arm to highlight, log, and transmit over UART (default: right)",
+    )
+    parser.add_argument(
         "--uart-deadband",
         type=float,
         default=1.0,
@@ -241,7 +250,12 @@ def main(argv: list[str] | None = None) -> int:
                     return 1
 
             tracker = StereoPoseTracker(calib, config)
-            state = DashboardState()
+            state = DashboardState(arm=args.arm)
+            arm_sh, arm_el, arm_wr = (
+                (LEFT_SHOULDER, LEFT_ELBOW, LEFT_WRIST)
+                if args.arm == "left"
+                else (RIGHT_SHOULDER, RIGHT_ELBOW, RIGHT_WRIST)
+            )
             recorder = None if args.no_record else SessionRecorder(calib, log_dir="logs")
             log_label = f"REC {recorder.path.name}" if recorder is not None else ""
 
@@ -328,29 +342,30 @@ def main(argv: list[str] | None = None) -> int:
                             uart = None
                             state.uart_enabled = False
 
+                        active_arm = stereo.left_arm if args.arm == "left" else stereo.right_arm
+
                         if uart is not None and uart.active and state.uart_enabled:
-                            uart.submit(stereo.left_arm.to_uart_angles())
+                            uart.submit(active_arm.to_uart_angles())
 
                         if recorder is not None:
                             recorder.append(t_rel, skew_ms, xyv0, xyv1, world0, world1, stereo)
 
-                        la = stereo.left_arm
-                        sh = stereo.joints.get(LEFT_SHOULDER)
-                        el = stereo.joints.get(LEFT_ELBOW)
-                        wr = stereo.joints.get(LEFT_WRIST)
+                        sh = stereo.joints.get(arm_sh)
+                        el = stereo.joints.get(arm_el)
+                        wr = stereo.joints.get(arm_wr)
                         log.writerow(
                             [
                                 f"{t_rel:.3f}",
-                                _fmt(la.upper_arm_cm, ".2f"),
-                                _fmt(la.forearm_cm, ".2f"),
-                                _fmt(la.hip_yaw_deg, ".1f"),
-                                _fmt(la.elevation_deg, ".1f"),
-                                _fmt(la.forward_pitch_deg, ".1f"),
-                                _fmt(la.side_abduction_deg, ".1f"),
-                                _fmt(la.elbow_interior_deg, ".1f"),
-                                _fmt(la.elbow_flexion_deg, ".1f"),
-                                _fmt(la.wrist_angle_deg, ".1f"),
-                                _fmt(la.hand_open_deg, ".1f"),
+                                _fmt(active_arm.upper_arm_cm, ".2f"),
+                                _fmt(active_arm.forearm_cm, ".2f"),
+                                _fmt(active_arm.hip_yaw_deg, ".1f"),
+                                _fmt(active_arm.elevation_deg, ".1f"),
+                                _fmt(active_arm.forward_pitch_deg, ".1f"),
+                                _fmt(active_arm.side_abduction_deg, ".1f"),
+                                _fmt(active_arm.elbow_interior_deg, ".1f"),
+                                _fmt(active_arm.elbow_flexion_deg, ".1f"),
+                                _fmt(active_arm.wrist_angle_deg, ".1f"),
+                                _fmt(active_arm.hand_open_deg, ".1f"),
                                 _fmt(None if sh is None else float(sh.xyz_rig[0]), ".3f"),
                                 _fmt(None if sh is None else float(sh.xyz_rig[1]), ".3f"),
                                 _fmt(None if sh is None else float(sh.xyz_rig[2]), ".3f"),

@@ -20,7 +20,7 @@ Both `stereo` and `mono` automatically discover the USB-UART adapter and open it
 uv run python main.py stereo --port /dev/cu.usbserial-10
 ```
 
-Joint IDs match `stm32/Core/Inc/main.h`: Hip `0`, Hand `1`, Elbow `2`, Wrist `3`, Shoulder `4`. If the port cannot be opened, the camera loop still runs and UART stays off. In stereo mode, UART sending starts disabled for safety: plug in the cable at any time, press `I` to connect/reconnect to the UART device, and press `U` to enable or disable sending joint commands.
+Joint IDs match `stm32/Core/Inc/main.h`: Hip `0`, Hand `1`, Elbow `2`, Wrist `3`, Shoulder `4`. By default the right arm is tracked and transmitted (pass `--arm left` in stereo mode to switch back). If the port cannot be opened, the camera loop still runs and UART stays off. In stereo mode, UART sending starts disabled for safety: plug in the cable at any time, press `I` to connect/reconnect to the UART device, and press `U` to enable or disable sending joint commands.
 
 ### STM32
 The following STM32 toolchain setup is for Linux systems. A Linux system is recommended, but MacOS or Windows systems should work with some tinkering. (WSL is useful for Windows systems.)
