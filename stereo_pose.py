@@ -16,6 +16,7 @@ import cv2
 import mediapipe as mp
 import numpy as np
 
+from arm.motion import JointMotionSmoother
 from arm.protocol import Joint
 from arm.uart import DEFAULT_BAUD, ArmUart, AsyncArmUart, UartSelectionError, resolve_uart_port
 from stereo.cameras import DualCameras
@@ -50,7 +51,9 @@ def setup_uart(
     baud: int = DEFAULT_BAUD,
     *,
     no_uart: bool = False,
-    deadband_deg: float = 1.0,
+    deadband_deg: float = 1.5,
+    smooth: bool = True,
+    speed_scale: float = 1.0,
     platform: str | None = None,
     directory: str = "/dev",
 ) -> AsyncArmUart | None:
@@ -74,13 +77,15 @@ def setup_uart(
             file=sys.stderr,
         )
         return None
+    smoother = JointMotionSmoother(speed_scale=speed_scale) if smooth else None
+    mode_tag = f"smoothed x{speed_scale:.2g}" if smooth else "raw"
     print(
-        f"UART connected: {chosen} @ {baud} 8N1 (all 5 joints: "
+        f"UART connected: {chosen} @ {baud} 8N1 ({mode_tag}, all 5 joints: "
         f"HIP={int(Joint.HIP)}, HAND={int(Joint.HAND)}, ELBOW={int(Joint.ELBOW)}, "
         f"WRIST={int(Joint.WRIST)}, SHOULDER={int(Joint.SHOULDER)}) — press U to start sending",
         file=sys.stderr,
     )
-    return AsyncArmUart(link, deadband_deg=deadband_deg)
+    return AsyncArmUart(link, deadband_deg=deadband_deg, smoother=smoother)
 
 
 def reconnect_uart_live(
@@ -88,7 +93,9 @@ def reconnect_uart_live(
     port: str | None,
     baud: int = DEFAULT_BAUD,
     *,
-    deadband_deg: float = 1.0,
+    deadband_deg: float = 1.5,
+    smooth: bool = True,
+    speed_scale: float = 1.0,
     platform: str | None = None,
     directory: str = "/dev",
 ) -> AsyncArmUart | None:
@@ -101,6 +108,8 @@ def reconnect_uart_live(
             baud,
             no_uart=False,
             deadband_deg=deadband_deg,
+            smooth=smooth,
+            speed_scale=speed_scale,
             platform=platform,
             directory=directory,
         )
@@ -202,8 +211,19 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--uart-deadband",
         type=float,
+        default=1.5,
+        help="Minimum joint angle change in degrees before transmitting a new UART frame (default: 1.5)",
+    )
+    parser.add_argument(
+        "--uart-speed",
+        type=float,
         default=1.0,
-        help="Minimum joint angle change in degrees before transmitting a new UART frame (default: 1.0)",
+        help="Multiplier for UART motion smoother speed/acceleration limits (default: 1.0; e.g. 0.7 gentler, 1.4 snappier)",
+    )
+    parser.add_argument(
+        "--no-uart-smooth",
+        action="store_true",
+        help="Disable velocity/acceleration-limited UART motion smoothing and send raw angles directly",
     )
     args = parser.parse_args(argv)
     config = StereoConfig.from_args(args)
@@ -214,6 +234,8 @@ def main(argv: list[str] | None = None) -> int:
             args.baud,
             no_uart=args.no_uart,
             deadband_deg=args.uart_deadband,
+            smooth=not args.no_uart_smooth,
+            speed_scale=args.uart_speed,
         )
     except UartSelectionError:
         return 1
@@ -467,6 +489,8 @@ def main(argv: list[str] | None = None) -> int:
                                     args.port,
                                     args.baud,
                                     deadband_deg=args.uart_deadband,
+                                    smooth=not args.no_uart_smooth,
+                                    speed_scale=args.uart_speed,
                                 )
                             elif state.uart_enabled != prev_uart_enabled:
                                 if uart is None or not uart.active:

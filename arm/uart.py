@@ -27,6 +27,7 @@ from typing import Mapping
 
 import serial
 
+from arm.motion import JointMotionSmoother
 from arm.protocol import Joint, encode_joint_command
 
 DEFAULT_PORT = "/dev/ttyUSB0"
@@ -195,14 +196,20 @@ class AsyncArmUart:
         *,
         deadband_deg: float = 1.0,
         refresh_s: float = 0.5,
+        smoother: JointMotionSmoother | None = None,
+        tick_hz: float = 33.0,
     ) -> None:
         if deadband_deg < 0.0:
             raise ValueError(f"deadband_deg must be non-negative, got {deadband_deg}")
         if refresh_s < 0.0:
             raise ValueError(f"refresh_s must be non-negative, got {refresh_s}")
+        if tick_hz <= 0.0 or not math.isfinite(tick_hz):
+            raise ValueError(f"tick_hz must be finite and positive, got {tick_hz}")
         self._link = link
         self._deadband_deg = float(deadband_deg)
         self._refresh_s = float(refresh_s)
+        self._smoother = smoother
+        self._tick_s = 1.0 / float(tick_hz)
         self._lock = threading.Lock()
         self._cond = threading.Condition(self._lock)
         self._pending: dict[Joint, float] | None = None
@@ -272,26 +279,47 @@ class AsyncArmUart:
         for joint, angle in batch.items():
             prev = self._last_sent.get(joint)
             prev_t = self._last_sent_ts.get(joint, -1e9)
-            changed = prev is None or abs(angle - prev) >= self._deadband_deg
+            joint_db = self._deadband_deg
+            if self._smoother is not None:
+                joint_db = max(joint_db, self._smoother.profile_for(joint).deadband_deg)
+            changed = prev is None or abs(angle - prev) >= joint_db
             stale = self._refresh_s > 0.0 and (now - prev_t) >= self._refresh_s
             if changed or stale:
                 due.append((joint, angle))
         return due
 
     def _run(self) -> None:
+        last_step_t = time.monotonic()
         while True:
-            with self._cond:
-                while self._pending is None and not self._stop:
-                    self._cond.wait(timeout=0.1)
-                if self._stop:
-                    return
-                batch = self._pending
-                self._pending = None
+            if self._smoother is None:
+                with self._cond:
+                    while self._pending is None and not self._stop:
+                        self._cond.wait(timeout=0.1)
+                    if self._stop:
+                        return
+                    batch = self._pending
+                    self._pending = None
+                if not batch:
+                    continue
+                now = time.monotonic()
+            else:
+                with self._cond:
+                    if self._pending is None and not self._stop:
+                        has_motion = bool(self._smoother.positions())
+                        self._cond.wait(timeout=self._tick_s if has_motion else 0.1)
+                    if self._stop:
+                        return
+                    incoming = self._pending
+                    self._pending = None
+                now = time.monotonic()
+                if incoming:
+                    self._smoother.update_targets(incoming)
+                dt = max(0.0, now - last_step_t)
+                last_step_t = now
+                batch = self._smoother.step(dt)
+                if not batch:
+                    continue
 
-            if not batch:
-                continue
-
-            now = time.monotonic()
             due = self._select_due(batch, now)
             for joint, angle in due:
                 with self._lock:

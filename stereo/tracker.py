@@ -442,6 +442,9 @@ def compute_arm_kinematics(
     if horiz_reach >= 0.10:
         if arm_fwd >= 0.0:
             hip_yaw_deg: float | None = float(np.degrees(math.atan2(arm_fwd, arm_side)))
+        elif prev_hip_yaw_deg is not None and abs(arm_side) < 0.08:
+            # Avoid a 0° <-> 180° teleport when arm drifts slightly behind the coronal plane.
+            hip_yaw_deg = 0.0 if prev_hip_yaw_deg < 90.0 else 180.0
         else:
             # Clamp cleanly to nearest endpoint if arm swings slightly behind the coronal plane.
             hip_yaw_deg = 0.0 if arm_side >= 0.0 else 180.0
