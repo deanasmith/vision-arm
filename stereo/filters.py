@@ -51,6 +51,31 @@ class _OneEuroChannel:
         return self.x.copy()
 
 
+class OneEuro1D:
+    """Scalar One-Euro filter for smooth, low-latency joint angle filtering."""
+
+    def __init__(
+        self,
+        min_cutoff: float = 1.8,
+        beta: float = 0.06,
+        d_cutoff: float = 1.2,
+        max_jump: float = 140.0,
+        max_gap_s: float = 0.45,
+    ):
+        self._ch = _OneEuroChannel(min_cutoff, beta, d_cutoff)
+        self.max_jump = float(max_jump)
+        self.max_gap_s = float(max_gap_s)
+
+    def filter(self, value: float, timestamp: float) -> float:
+        out = self._ch.update(np.array([float(value)], dtype=np.float64), timestamp, self.max_jump, self.max_gap_s)
+        return float(out[0])
+
+    def reset(self) -> None:
+        self._ch.x = None
+        self._ch.dx = None
+        self._ch.t = 0.0
+
+
 class OneEuro3D:
     """Per-landmark 3D One-Euro filter: steady when still, zero lag when moving."""
 

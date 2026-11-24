@@ -139,9 +139,9 @@ class ArmKinematics:
 
         Joint conventions match ``stm32/Core/Inc/main.h`` and ``pose-estimation.py``:
         - ``HIP`` (0): horizontal arm yaw in torso frame (0° side, 90° forward, 180° across)
-        - ``HAND`` (1): thumb-index openness (0° closed/pinched, 180° open)
+        - ``HAND`` (1): hand openness (0° closed fist/pinch, 180° wide open)
         - ``ELBOW`` (2): elbow flexion angle (0° straight, 90° bent, 180° folded)
-        - ``WRIST`` (3): forearm-to-hand interior angle (180° straight, 0° bent)
+        - ``WRIST`` (3): wrist roll around forearm (0° palm down, 90° thumb up, 180° palm up)
         - ``SHOULDER`` (4): upper-arm elevation from hanging down (0° down, 90° level, 180° up)
         """
         out: dict[Joint, float] = {}
@@ -471,16 +471,36 @@ def compute_arm_kinematics(
         pnk_ok = pnk_pt is not None and 0.03 <= float(np.linalg.norm(pnk_pt - wr)) <= 0.24
         thm_ok = thm_pt is not None and 0.02 <= float(np.linalg.norm(thm_pt - wr)) <= 0.22
 
-        hand_tip: np.ndarray | None = None
-        if idx_ok and pnk_ok:
-            hand_tip = 0.5 * (idx_pt + pnk_pt)
-        elif idx_ok:
-            hand_tip = idx_pt
-        elif pnk_ok:
-            hand_tip = pnk_pt
-
-        if hand_tip is not None and float(np.linalg.norm(hand_tip - wr)) >= 0.03:
-            wrist_angle_deg = float(np.clip(calculate_3d_angle(el, wr, hand_tip), 0.0, 180.0))
+        # Pose-only fallback for wrist roll (0 deg palm down, 90 deg thumb up, 180 deg palm up)
+        # when MediaPipe Hands is unavailable; stereo_pose overrides with MediaPipe Hands when active.
+        if idx_ok and pnk_ok and forearm_m > 0.05:
+            u_forearm = (wr - el) / forearm_m
+            v_knuckle = idx_pt - pnk_pt
+            k_perp = v_knuckle - float(np.dot(v_knuckle, u_forearm)) * u_forearm
+            kn = float(np.linalg.norm(k_perp))
+            if kn >= 0.015:
+                k_hat = k_perp / kn
+                world_up = np.array([0.0, -1.0, 0.0], dtype=np.float64)
+                vert = abs(float(np.dot(world_up, u_forearm)))
+                if vert > 0.80:
+                    blend = float(np.clip((vert - 0.80) / 0.18, 0.0, 1.0))
+                    ref_up = (1.0 - blend) * world_up + blend * np.array([0.0, 0.0, 1.0], dtype=np.float64)
+                else:
+                    ref_up = world_up
+                up_proj = ref_up - float(np.dot(ref_up, u_forearm)) * u_forearm
+                un = float(np.linalg.norm(up_proj))
+                if un >= 1e-6:
+                    u_up = up_proj / un
+                    u_inward = -side_sign * np.cross(u_up, u_forearm)
+                    in_n = float(np.linalg.norm(u_inward))
+                    if in_n >= 1e-6:
+                        u_inward /= in_n
+                        cos_r = float(np.dot(k_hat, u_inward))
+                        sin_r = float(np.dot(k_hat, u_up))
+                        if sin_r >= 0.0:
+                            wrist_angle_deg = float(np.clip(np.degrees(math.atan2(sin_r, cos_r)), 0.0, 180.0))
+                        else:
+                            wrist_angle_deg = 0.0 if cos_r >= 0.0 else 180.0
 
         if idx_ok and thm_ok:
             palm_len = max(float(np.linalg.norm(idx_pt - wr)), 0.04)

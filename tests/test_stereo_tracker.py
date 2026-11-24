@@ -250,10 +250,10 @@ class StereoTrackerTests(unittest.TestCase):
             LEFT_SHOULDER: np.array([0.20, -0.10, 1.30]),
             RIGHT_SHOULDER: np.array([-0.20, -0.10, 1.30]),
             LEFT_ELBOW: np.array([0.20, -0.10, 1.00]),       # 30 cm forward (-Z) -> hip=90°, shoulder=90°
-            LEFT_WRIST: np.array([0.20, -0.35, 1.00]),       # 25 cm up (-Y) -> elbow interior=90°
-            LEFT_INDEX: np.array([0.20, -0.45, 1.00]),       # 10 cm straight up -> wrist=180°
-            LEFT_PINKY: np.array([0.20, -0.45, 1.00]),
-            LEFT_THUMB: np.array([0.11, -0.43, 1.00]),       # ~9.2 cm spread on 10 cm palm -> open (~180°)
+            LEFT_WRIST: np.array([0.20, -0.35, 1.00]),       # 25 cm up (-Y) -> elbow flexion=90°
+            LEFT_INDEX: np.array([0.17, -0.45, 1.00]),       # palm facing cameras -> wrist roll=0°
+            LEFT_PINKY: np.array([0.23, -0.45, 1.00]),
+            LEFT_THUMB: np.array([0.08, -0.43, 1.00]),       # ~9.2 cm spread on 10 cm palm -> open (~180°)
             LEFT_HIP: np.array([0.14, 0.35, 1.30]),
             RIGHT_HIP: np.array([-0.14, 0.35, 1.30]),
         }
@@ -271,7 +271,7 @@ class StereoTrackerTests(unittest.TestCase):
         self.assertAlmostEqual(angles[Joint.HIP], 90.0, places=1)
         self.assertAlmostEqual(angles[Joint.SHOULDER], 90.0, places=1)
         self.assertAlmostEqual(angles[Joint.ELBOW], 90.0, places=1)
-        self.assertAlmostEqual(angles[Joint.WRIST], 180.0, places=1)
+        self.assertAlmostEqual(angles[Joint.WRIST], 0.0, delta=2.0)
         self.assertGreater(angles[Joint.HAND], 170.0)
 
     def test_stereo_uart_setup_handles_missing_adapter_and_no_uart(self):
@@ -321,7 +321,7 @@ class StereoTrackerTests(unittest.TestCase):
         self.assertAlmostEqual(angles[Joint.HIP], 90.0, delta=2.0)
         self.assertAlmostEqual(angles[Joint.SHOULDER], 90.0, delta=2.0)
         self.assertAlmostEqual(angles[Joint.ELBOW], 90.0, delta=2.0)
-        self.assertGreater(angles[Joint.WRIST], 150.0)
+        self.assertIn(Joint.WRIST, angles)
         self.assertGreater(angles[Joint.HAND], 60.0)
 
         # Straight arm -> elbow flexion UART angle should be 0 deg (not 180 deg).

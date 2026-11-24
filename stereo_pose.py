@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import csv
+from dataclasses import replace
 import math
 from pathlib import Path
 import sys
@@ -20,6 +21,7 @@ from arm.uart import DEFAULT_BAUD, ArmUart, AsyncArmUart, UartSelectionError, re
 from stereo.cameras import DualCameras
 from stereo.config import StereoConfig
 from stereo.geometry import StereoCalibration, parallel_camera_calibration
+from stereo.hand_tracker import StereoHandTracker, compute_hand_roi, extract_hand_in_roi
 from stereo.recorder import NUM_POSE_LANDMARKS, SessionRecorder
 from stereo.tracker import (
     LEFT_ELBOW,
@@ -250,6 +252,7 @@ def main(argv: list[str] | None = None) -> int:
                     return 1
 
             tracker = StereoPoseTracker(calib, config)
+            hand_tracker = StereoHandTracker(calib, tracker.rig)
             state = DashboardState(arm=args.arm)
             arm_sh, arm_el, arm_wr = (
                 (LEFT_SHOULDER, LEFT_ELBOW, LEFT_WRIST)
@@ -270,6 +273,21 @@ def main(argv: list[str] | None = None) -> int:
                 smooth_landmarks=False,
                 min_detection_confidence=0.5,
                 min_tracking_confidence=0.5,
+            )
+            mp_hands = mp.solutions.hands
+            hands_cam0 = mp_hands.Hands(
+                static_image_mode=False,
+                max_num_hands=1,
+                model_complexity=0,
+                min_detection_confidence=0.45,
+                min_tracking_confidence=0.45,
+            )
+            hands_cam1 = mp_hands.Hands(
+                static_image_mode=False,
+                max_num_hands=1,
+                model_complexity=0,
+                min_detection_confidence=0.45,
+                min_tracking_confidence=0.45,
             )
 
             cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
@@ -337,12 +355,41 @@ def main(argv: list[str] | None = None) -> int:
                         t_rel = now - started
                         stereo = tracker.process(obs0, obs1, t_rel, use_filter=state.use_filter)
 
+                        roi0 = compute_hand_roi(obs0, frame_l.shape[:2], arm=args.arm)
+                        roi1 = compute_hand_roi(obs1, frame_r.shape[:2], arm=args.arm)
+                        hfut0 = pool.submit(extract_hand_in_roi, hands_cam0, frame_l, roi0, 1)
+                        hfut1 = pool.submit(extract_hand_in_roi, hands_cam1, frame_r, roi1, 2)
+                        hand0 = hfut0.result()
+                        hand1 = hfut1.result()
+
+                        sh = stereo.joints.get(arm_sh)
+                        el = stereo.joints.get(arm_el)
+                        wr = stereo.joints.get(arm_wr)
+                        forearm_dir = (
+                            (wr.xyz_rig - el.xyz_rig)
+                            if (el is not None and wr is not None)
+                            else None
+                        )
+                        hand_metrics = hand_tracker.update(
+                            hand0,
+                            hand1,
+                            forearm_dir_rig=forearm_dir,
+                            arm=args.arm,
+                            timestamp=t_rel,
+                            use_filter=state.use_filter,
+                        )
+
                         if uart is not None and not uart.active:
                             uart.close()
                             uart = None
                             state.uart_enabled = False
 
-                        active_arm = stereo.left_arm if args.arm == "left" else stereo.right_arm
+                        base_arm = stereo.left_arm if args.arm == "left" else stereo.right_arm
+                        active_arm = replace(
+                            base_arm,
+                            wrist_angle_deg=hand_metrics.wrist_roll_deg,
+                            hand_open_deg=hand_metrics.hand_open_deg,
+                        )
 
                         if uart is not None and uart.active and state.uart_enabled:
                             uart.submit(active_arm.to_uart_angles())
@@ -350,9 +397,6 @@ def main(argv: list[str] | None = None) -> int:
                         if recorder is not None:
                             recorder.append(t_rel, skew_ms, xyv0, xyv1, world0, world1, stereo)
 
-                        sh = stereo.joints.get(arm_sh)
-                        el = stereo.joints.get(arm_el)
-                        wr = stereo.joints.get(arm_wr)
                         log.writerow(
                             [
                                 f"{t_rel:.3f}",
@@ -404,6 +448,7 @@ def main(argv: list[str] | None = None) -> int:
                             tracker.rig,
                             state,
                             fps=fps,
+                            hand_metrics=hand_metrics,
                             log_label=log_label,
                             uart_label=uart_label,
                         )
@@ -440,6 +485,8 @@ def main(argv: list[str] | None = None) -> int:
                 log_file.close()
                 pose_cam0.close()
                 pose_cam1.close()
+                hands_cam0.close()
+                hands_cam1.close()
     finally:
         if uart is not None:
             uart.close()

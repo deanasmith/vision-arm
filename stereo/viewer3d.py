@@ -9,6 +9,7 @@ import cv2
 import numpy as np
 
 from stereo.geometry import RigFrame, StereoCalibration, epipolar_curve_in_other, project_points
+from stereo.hand_tracker import HAND_SKELETON_EDGES, HandMetrics
 from stereo.tracker import (
     LEFT_EAR,
     LEFT_ELBOW,
@@ -273,6 +274,7 @@ def draw_camera_panel(
     calib: StereoCalibration,
     *,
     arm: str = "right",
+    hand_xy: np.ndarray | None = None,
     debug_overlay: bool = False,
 ) -> np.ndarray:
     """Clean camera view (CAM_W x CAM_H) with minimal 2D skeleton + optional debug overlays."""
@@ -317,6 +319,15 @@ def draw_camera_panel(
         r = 4 if idx in arm_joint_set else 3
         cv2.circle(vis, sc(xy), r, _joint_color(j), cv2.FILLED, cv2.LINE_AA)
 
+    if hand_xy is not None and len(hand_xy) == 21:
+        for a, b in HAND_SKELETON_EDGES:
+            pa = sc((float(hand_xy[a, 0]), float(hand_xy[a, 1])))
+            pb = sc((float(hand_xy[b, 0]), float(hand_xy[b, 1])))
+            cv2.line(vis, pa, pb, (255, 225, 95), 1, cv2.LINE_AA)
+        for i in range(21):
+            pt = sc((float(hand_xy[i, 0]), float(hand_xy[i, 1])))
+            cv2.circle(vis, pt, 2, (255, 240, 140), cv2.FILLED, cv2.LINE_AA)
+
     if debug_overlay:
         for idx, j in stereo.joints.items():
             proj = project_points(calib, j.xyz_cam1, camera_num)[0]
@@ -354,6 +365,7 @@ def render_3d_viewport(
     state: DashboardState,
     *,
     fps: float,
+    hand_metrics: HandMetrics | None = None,
     log_label: str = "",
     uart_label: str = "",
 ) -> np.ndarray:
@@ -457,10 +469,20 @@ def render_3d_viewport(
         parts.append(f"Sh {active_arm.elevation_deg:.0f}")
     if active_arm.elbow_flexion_deg is not None:
         parts.append(f"El {active_arm.elbow_flexion_deg:.0f}")
-    if active_arm.wrist_angle_deg is not None:
-        parts.append(f"Wr {active_arm.wrist_angle_deg:.0f}")
-    if active_arm.hand_open_deg is not None:
-        parts.append(f"Hnd {active_arm.hand_open_deg:.0f}")
+    wrist_roll = (
+        hand_metrics.wrist_roll_deg
+        if hand_metrics is not None and hand_metrics.wrist_roll_deg is not None
+        else active_arm.wrist_angle_deg
+    )
+    hand_open = (
+        hand_metrics.hand_open_deg
+        if hand_metrics is not None and hand_metrics.hand_open_deg is not None
+        else active_arm.hand_open_deg
+    )
+    if wrist_roll is not None:
+        parts.append(f"Roll {wrist_roll:.0f}")
+    if hand_open is not None:
+        parts.append(f"Hnd {hand_open:.0f}")
     if math.isfinite(stereo.median_ray_gap_mm):
         parts.append(f"gap {stereo.median_ray_gap_mm:.1f}mm")
     parts.append(f"{fps:.0f} fps")
@@ -502,6 +524,7 @@ def compose_dashboard(
     state: DashboardState,
     *,
     fps: float,
+    hand_metrics: HandMetrics | None = None,
     log_label: str = "",
     uart_label: str = "",
 ) -> np.ndarray:
@@ -515,6 +538,7 @@ def compose_dashboard(
         stereo,
         calib,
         arm=state.arm,
+        hand_xy=None if hand_metrics is None else hand_metrics.cam0_xy,
         debug_overlay=state.debug_overlay,
     )
     p1 = draw_camera_panel(
@@ -526,6 +550,7 @@ def compose_dashboard(
         stereo,
         calib,
         arm=state.arm,
+        hand_xy=None if hand_metrics is None else hand_metrics.cam1_xy,
         debug_overlay=state.debug_overlay,
     )
     left_tile, right_tile = (p0, p1) if rig.cam0_is_physical_left else (p1, p0)
@@ -536,6 +561,7 @@ def compose_dashboard(
         stereo,
         state,
         fps=fps,
+        hand_metrics=hand_metrics,
         log_label=log_label,
         uart_label=uart_label,
     )
