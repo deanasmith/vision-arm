@@ -10,7 +10,7 @@ JOINT_IDS = {"shoulder": 4, "wrist": 3, "elbow": 2, "hand": 1, "hip": 0}
 REPLY_TIMEOUT_S = 0.15
 
 # Slow-mode pacing for STM32 firmware (~1 command every 2 s)
-SLOW_MODE = True
+SLOW_MODE = False
 SLOW_GAP_S = 2.0 # seconds of time gap between any UART packets
 SLOW_MIN_CHANGE = 20.0 # minimum degree change before sending in slow mode
 

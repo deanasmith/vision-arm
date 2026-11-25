@@ -14,13 +14,39 @@ from stereo.config import StereoConfig
 from stereo.geometry import triangulate_matched
 from stereo.overlay import draw_pose_overlay, LEFT_SHOULDER, LEFT_ELBOW, LEFT_WRIST
 from stereo.kinematics import calculate_3d_angle, calculate_shoulder_flexion
-from stereo_pose import extract_pose_pixels, load_or_guess_calibration
+from stereo_pose import load_or_guess_calibration
 from angle_sender import AngleSender
 
 # MediaPipe pose landmark indices (person's LEFT side)
 LEFT_INDEX = 19
 LEFT_THUMB = 21
 LEFT_HIP = 23
+LEFT_WRIST = 15
+RIGHT_WRIST = 16
+
+def landmark_pixels(landmarks, w: int, h: int, visibility: float) -> dict[int, tuple[float, float]]:
+    """Convert MediaPipe landmarks to {index: (x_px, y_px)} filtered by visibility."""
+    if landmarks is None:
+        return {}
+    out = {}
+    for i, lm in enumerate(landmarks.landmark):
+        if getattr(lm, "visibility", 1.0) >= visibility:
+            out[i] = (lm.x * w, lm.y * h)
+    return out
+
+def extract_pose_pixels(holistic, frame: np.ndarray, visibility: float):
+    """Return (pose pixels for triangulation, overlay pixels, mediapipe results)."""
+    h, w = frame.shape[:2]
+    results = holistic.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+    pose_xy = landmark_pixels(results.pose_landmarks, w, h, visibility)
+    draw_xy = dict(pose_xy)
+    if results.left_hand_landmarks is not None:
+        wrist = results.left_hand_landmarks.landmark[0]
+        draw_xy[LEFT_WRIST] = (wrist.x * w, wrist.y * h)
+    if results.right_hand_landmarks is not None:
+        wrist = results.right_hand_landmarks.landmark[0]
+        draw_xy[RIGHT_WRIST] = (wrist.x * w, wrist.y * h)
+    return pose_xy, draw_xy, results
 
 # "mono": one webcam. 3D joints come from MediaPipe's own estimate (pose_world_landmarks)
 # "stereo": two webcams + Charuco calibration (run `main.py calibrate` first)
